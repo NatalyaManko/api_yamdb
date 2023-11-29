@@ -11,7 +11,7 @@ class Title(models.Model):
 
 
 class Review(models.Model):
-    text = models.TextField('Текст')
+    text = models.TextField('Текст', max_length=200)
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,

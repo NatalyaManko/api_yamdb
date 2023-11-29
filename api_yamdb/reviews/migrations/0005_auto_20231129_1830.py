@@ -10,14 +10,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='review',
-            name='author',
-        ),
-        migrations.RemoveField(
-            model_name='review',
-            name='title',
-        ),
+#        migrations.RemoveField(
+#            model_name='review',
+#            name='author',
+#        ),
+#        migrations.RemoveField(
+#            model_name='review',
+#            name='title',
+#        ),
         migrations.DeleteModel(
             name='Title',
         ),
