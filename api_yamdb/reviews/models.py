@@ -1,21 +1,29 @@
+from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
+User = get_user_model()
+
+
+class Title(models.Model):
+    pass
+
+
 class Review(models.Model):
     text = models.TextField('Текст')
-#    title = models.ForeignKey(
-#        Title,
-#        on_delete=models.CASCADE,
-#        related_name='reviews',
-#        verbose_name='Произведение'
-#        )
-#    author = models.ForeignKey(
-#        User,
-#        on_delete=models.CASCADE,
-#        related_name='reviews',
-#        verbose_name='Автор'
-#        )
+    title = models.ForeignKey(
+        Title,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name='Произведение'
+        )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name='Автор'
+        )
     score = models.PositiveSmallIntegerField(
         'Оценка',
         validators=[MaxValueValidator(10),
@@ -25,12 +33,12 @@ class Review(models.Model):
 
     class Meta:
         ordering = ('pub_date',)
-#        constraints = [
-#            models.UniqueConstraint(
-#                fields=['title', 'author'],
-#                name='unique_title_author'
-#            )
-#        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'author'],
+                name='unique_title_author'
+            )
+        ]
         verbose_name = 'отзыв'
         verbose_name_plural = 'Отзывы'
 
