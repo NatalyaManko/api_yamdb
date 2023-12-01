@@ -7,16 +7,24 @@ User = get_user_model()
 
 
 class Title(models.Model):
-    pass
+    name = models.CharField('Произведение', max_length=200)
+    rating = models.PositiveIntegerField('Рейтинг')
+
+    class Meta:
+        verbose_name = 'произведение'
+        verbose_name_plural = 'Произведения'
+        
+    def __str__(self):
+        return self.name
 
 
 class Review(models.Model):
-    text = models.TextField('Текст', max_length=200)
+    text = models.TextField('Текст')
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
-        related_name='reviews',
-        verbose_name='Произведение'
+        related_name='reviews_title',
+        verbose_name='Произведение',
         )
     author = models.ForeignKey(
         User,
