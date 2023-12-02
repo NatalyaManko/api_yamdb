@@ -14,7 +14,7 @@ class Categories(models.Model):
 
 class Genres(models.Model):
     name = models.CharField(max_length=256)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, )
 
 
 class Titles(models.Model):

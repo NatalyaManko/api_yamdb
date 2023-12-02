@@ -9,18 +9,22 @@ from reviews.models import (Category, Genres, Titles)
 class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
-        fields = '__all__'
+        fields = ('name', 'slug',)
         model = Category
+
 
 
 class GenresSerializer(serializers.ModelSerializer):
 
     class Meta:
-        fields = '_all__'
+        fields = ('name', 'slug',)
         model = Genres
 
 
 class TitleSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Titles
-        fields = '__all__'
+        fields = ('name', 'year', 'description',
+                  'genre', 'category',)
+
