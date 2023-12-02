@@ -1,15 +1,13 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, filters
-from reviews import (Category,
+from reviews.models import (Categories,
                      Genres,
                      Titles)
-
-from api_yamdb.api import serializers
-from api_yamdb.api.serializers import CategorySerializer, GenresSerializer, TitleSerializer
+from .serializers import CategorySerializer, GenresSerializer, TitleSerializer
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
-   queryset = Category.objects.all()
+   queryset = Categories.objects.all()
    serializer_class = CategorySerializer
    filter_backends = (filters.SearchFilter,)
    search_fields = ('')
