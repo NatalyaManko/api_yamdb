@@ -20,14 +20,17 @@ class Genres(models.Model):
 class Titles(models.Model):
     category = models.ForeignKey(Categories, on_delete=models.SET_NULL,
                                  related_name='titles', null=True, blank=True)
-    genre = models.ForeignKey(Genres, on_delete=models.SET_NULL,
-                              related_name='titles', null=True, blank=True)
     name = models.CharField(max_length=256)
     year = models.IntegerField()
     description = models.TextField()
 
     def __str__(self):
         return self.name
+
+
+class GenreTitles(models.Model):
+    genre = models.ForeignKey(Genres, on_delete=models.CASCADE)
+    title = models.ForeignKey(Titles, on_delete=models.CASCADE)
 
 
 class Reviews(models.Model):
