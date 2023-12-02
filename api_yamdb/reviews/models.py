@@ -2,18 +2,36 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-
 User = get_user_model()
 
 
-class Title(models.Model):
-    name = models.CharField('Произведение', max_length=200)
-    rating = models.PositiveIntegerField('Рейтинг')
+class Category(models.Model):
+    name = models.CharField(max_length=256)
+    slug = models.SlugField(unique=True)
 
-    class Meta:
-        verbose_name = 'произведение'
-        verbose_name_plural = 'Произведения'
-        
+    def __str__(self):
+        return self.name
+
+
+class Genre(models.Model):
+    name = models.CharField(max_length=256)
+    slug = models.SlugField(unique=True, )
+
+
+class Title(models.Model):
+    category = models.ForeignKey(
+        Category, on_delete=models.SET_NULL,
+        related_name='titles', null=True, blank=True
+        )
+    genre = models.ForeignKey(
+        Genre, on_delete=models.SET_NULL,
+        related_name='titles', null=True, blank=True
+        )
+    name = models.CharField(max_length=256)
+    year = models.IntegerField()
+    description = models.TextField()
+    rating = models.PositiveIntegerField()
+
     def __str__(self):
         return self.name
 
@@ -50,5 +68,7 @@ class Review(models.Model):
         verbose_name = 'отзыв'
         verbose_name_plural = 'Отзывы'
 
-    def __str__(self):
-        return self.text
+
+class Comment(models.Model):
+    pass
+

@@ -1,8 +1,12 @@
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField, StringRelatedField
 from rest_framework.validators import UniqueTogetherValidator
+from django.contrib.auth import get_user_model
 
-from reviews.models import Review, Title
+from reviews.models import Review, Title, Category, Genre
+
+
+User = get_user_model()
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -24,3 +28,25 @@ class ReviewSerializer(serializers.ModelSerializer):
                message=('Вы уже оценили произведение!')
             ),
         )
+
+
+class CategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('name', 'slug',)
+        model = Category
+
+
+class GenresSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('name', 'slug',)
+        model = Genre
+
+
+class TitleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Title
+        fields = ('name', 'year', 'description',
+                  'genre', 'category',)
