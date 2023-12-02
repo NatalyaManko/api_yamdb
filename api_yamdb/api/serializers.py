@@ -8,9 +8,16 @@ from reviews.models import (Categories, Genres, Titles)
 
 class CategorySerializer(serializers.ModelSerializer):
 
+
+
     class Meta:
         fields = ('name', 'slug',)
         model = Categories
+
+
+
+
+
 
 
 class GenresSerializer(serializers.ModelSerializer):

@@ -3,6 +3,8 @@ from rest_framework import viewsets, permissions, filters
 from reviews.models import (Categories,
                      Genres,
                      Titles)
+
+from .permissions import IsOwnerOrReadOnly
 from .serializers import CategorySerializer, GenresSerializer, TitleSerializer
 
 
@@ -10,6 +12,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Categories.objects.all()
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
+    permission_classes = (IsOwnerOrReadOnly,)
     search_fields = ('^name',)
 
 
@@ -17,6 +20,7 @@ class GenresViewSet(viewsets.ModelViewSet):
     queryset = Genres.objects.all()
     serializer_class = GenresSerializer
     filter_backends = (filters.SearchFilter,)
+    permission_classes = (IsOwnerOrReadOnly,)
     search_fields = ('^name',)
 
     def perform_create(self, serializer):
