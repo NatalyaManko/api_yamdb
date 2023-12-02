@@ -1,17 +1,21 @@
 from django.shortcuts import render
 from rest_framework import viewsets
+from reviews import (Category,
+                     Genres,
+                     Titles)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
-   pass
+   queryset = Category.objects.all()
 
 
 class GenresViewSet(viewsets.ModelViewSet):
-    pass
+    queryset = Genres.objects.all()
+
 
 class TitlesViewSet(viewsets.ModelViewSet):
-    pass
+    queryset = Titles.objects.all()
 
 
 
-# Create your views here.
+
