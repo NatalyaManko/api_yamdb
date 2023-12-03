@@ -25,21 +25,21 @@ from .serializers import (CategorySerializer, CommentSerializer,
 class APISignup(APIView):
     permission_classes = (AllowAny,)
 
-    def send_email(email_data):
+    def send_email(self, email_data):
         email = EmailMessage(
             subject=email_data['email_subject'],
             body=email_data['email_body'],
-            to=email_data['to_email']
+            to=(email_data['to_email'],)
         )
         email.send()
 
-    def generate_confirmation_code():
+    def generate_confirmation_code(self):
         letters_and_digits = string.ascii_letters + string.digits
         confirmation_code = ''.join(secrets.choice(
             letters_and_digits) for i in range(8))
         return confirmation_code
 
-    def save_confirmation_code(username, code):
+    def save_confirmation_code(self, username, code):
         user = User.objects.filter(username=username)
         user.confirmation_code = code
         user.save(update_fields=['confirmation_code'])
