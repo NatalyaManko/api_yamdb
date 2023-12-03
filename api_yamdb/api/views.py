@@ -7,8 +7,8 @@ from reviews.models import Title, Review
 from .serializers import ReviewSerializer
 from .permissions import IsOwnerOrReadOnly
 from rest_framework import viewsets, permissions, filters
-from reviews.models import (Category, Genre, Title)
-from .serializers import CategorySerializer, GenresSerializer, TitleSerializer
+from reviews.models import (Category, Genre, Title, Comment)
+from .serializers import CategorySerializer, GenresSerializer, TitleSerializer, CommentSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -22,7 +22,21 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title_id = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
-        serializer.save(title=title_id)#author=self.request.user,
+        serializer.save(author=self.request.user, title=title_id)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    """Изменить или удалить комментарий может только автор."""
+    serializer_class = CommentSerializer
+ #   permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorPermission]
+
+    def get_queryset(self):
+        review_id = get_object_or_404(Review, pk=self.kwargs['review_pk'])
+        return review_id.comments.all()
+
+    def perform_create(self, serializer):
+        review_id = get_object_or_404(Review, pk=self.kwargs.get('review_pk'))
+        serializer.save(author=self.request.user, review=review_id)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
