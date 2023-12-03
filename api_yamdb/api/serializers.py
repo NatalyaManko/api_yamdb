@@ -1,7 +1,9 @@
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
-
-User = get_user_model()
+from rest_framework.relations import SlugRelatedField
+from django.shortcuts import get_object_or_404
+from reviews.models import Review, Title, Category, Genre, Comment
+from users.models import User
+from django.db.models import Avg
 
 
 class UsersSerializer(serializers.ModelSerializer):
@@ -39,35 +41,27 @@ class GetTokenSerializer(serializers.ModelSerializer):
             'username',
             'confirmation_code'
         )
-from rest_framework import serializers
-from rest_framework.relations import SlugRelatedField
-from django.shortcuts import get_object_or_404
-from reviews.models import Review, Title, Category, Genre, Comment
-from users.models import User
-from django.db.models import Avg
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-#    author = SlugRelatedField(
-#        read_only=True,
-#        slug_field='username',
-#        default=serializers.CurrentUserDefault()
-#    )
-#    title = serializers.HiddenField(
-#        default=serializers.CreateOnlyDefault(Title))
-    
+    author = SlugRelatedField(
+        read_only=True,
+        slug_field='username',
+        default=serializers.CurrentUserDefault()
+    )
+
     def validate(self, data):
         title_id = self.context.get('view').kwargs.get('title_id')
         title = get_object_or_404(Title, pk=title_id)
-        author = self.context.get('request').user.id
+        author = self.context.get('request').user
         if self.context.get('request').method == 'POST':
-            if not title.reviews_title.filter(author=author).exists():
+            if not title.reviews_title.filter(author=author, title=title).exists():
                 raise serializers.ValidationError(
                     f'Вы уже оценили произведение: {title}!'
                     )
             return data
         return data
-
+    
     class Meta:
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date')
@@ -80,12 +74,10 @@ class CommentSerializer(serializers.ModelSerializer):
         slug_field='username',
         default=serializers.CurrentUserDefault()
     )
-    review = serializers.HiddenField(
-        default=serializers.CreateOnlyDefault(Review))
 
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'author', 'pub_date', 'review',)
+        fields = ('id', 'text', 'author', 'pub_date')
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -112,12 +104,9 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'description', 'category', 'genre',)
-        model = Title
-        fields = ('name', 'year', 'rating', 'description',
-                  'genre', 'category')
+        fields = ('id', 'name', 'year', 'rating', 'description', 'category', 'genre',)
 
     def get_rating(self, obj):
         score = Review.objects.filter(
             title=obj).aggregate(rating=(Avg('score')))
-        return int(score['rating'])
+        return int(score['rating'] if score['rating'] else 0)

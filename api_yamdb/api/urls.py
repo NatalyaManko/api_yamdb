@@ -1,23 +1,11 @@
 from django.urls import include, path
-from rest_framework.routers import SimpleRouter
-
-from api.views import APIGetToken, APISignup, MeViewSet, UsersViewSet
-
-router = SimpleRouter()
-router.register('users', UsersViewSet, basename='users')
-
-urlpatterns = [
-    path('v1/auth/signup/', APISignup.as_view(), name='signup'),
-    path('v1/auth/token/', APIGetToken.as_view(), name='get_token'),
-    path('v1/users/me/', MeViewSet, name='me'),
-    path('v1/', include(router.urls)),
-]
-
-from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-
-from .views import CategoryViewSet, GenresViewSet, TitlesViewSet, ReviewViewSet, CommentViewSet
-
+from rest_framework.routers import DefaultRouter
+from .views import (APIGetToken, APISignup,
+                    MeViewSet, UsersViewSet,
+                    CategoryViewSet, GenresViewSet,
+                    TitlesViewSet, ReviewViewSet,
+                    CommentViewSet)
 
 router_v1 = DefaultRouter()
 
@@ -34,8 +22,11 @@ router_v1.register(
     CommentViewSet,
     basename='comments'
 )
-
+router_v1.register('users', UsersViewSet, basename='users')
 
 urlpatterns = [
-    path('v1/', include(router_v1.urls),)
+    path('v1/auth/signup/', APISignup.as_view(), name='signup'),
+    path('v1/auth/token/', APIGetToken.as_view(), name='get_token'),
+    path('v1/users/me/', MeViewSet, name='me'),
+    path('v1/', include(router_v1.urls)),
 ]

@@ -1,19 +1,25 @@
 import secrets
 import string
-from django.contrib.auth import get_user_model
+
 from django.core.mail import EmailMessage
-from rest_framework import mixins, status, viewsets
+
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from api.permissions import AdminPermission
-from api.serializers import (GetTokenSerializer, MeSerializer,
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, viewsets, mixins, status
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from reviews.models import Category, Genre, Review, Title
+from users.models import User
+from .permissions import AdminPermission, IsOwnerOrReadOnly
+from .serializers import (CategorySerializer, CommentSerializer,
+                          GenresSerializer, ReviewSerializer, TitleSerializer, 
+                          GetTokenSerializer, MeSerializer,
                              SignUpSerializer, UsersSerializer)
-
-User = get_user_model()
 
 
 class APISignup(APIView):
@@ -93,18 +99,6 @@ class MeViewSet(mixins.RetrieveModelMixin,
 
     def get_queryset(self):
         return self.request.user
-from django.shortcuts import render, get_object_or_404
-
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, serializers
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-
-from reviews.models import Title, Review
-from .serializers import ReviewSerializer
-from .permissions import IsOwnerOrReadOnly
-from rest_framework import viewsets, permissions, filters
-from reviews.models import (Category, Genre, Title, Comment)
-from .serializers import CategorySerializer, GenresSerializer, TitleSerializer, CommentSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -112,7 +106,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('text', 'author', 'score')
- #   permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+  #  permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def get_queryset(self):
         title_id = get_object_or_404(Title, pk=self.kwargs['title_id'])
@@ -120,15 +114,15 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title_id = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
-        serializer.save(title=title_id) #author=self.request.user, 
+        serializer.save(author=self.request.user, title=title_id)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    """Изменить или удалить комментарий может только автор."""
+    """Изменить или удалить комментарий может автор."""
     serializer_class = CommentSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('text', 'author')
- #   permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorPermission]
+ #   permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def get_queryset(self):
         review_id = get_object_or_404(Review, pk=self.kwargs['review_pk'])
@@ -140,7 +134,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Categories.objects.all()
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
     permission_classes = (IsOwnerOrReadOnly,)

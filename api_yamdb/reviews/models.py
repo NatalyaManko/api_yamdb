@@ -3,7 +3,7 @@ from django.db import models
 from users.models import User
 
 
-class Categories(models.Model):
+class Category(models.Model):
     """Модель Категорий"""
     name = models.CharField(max_length=256,
                             verbose_name='Название категории',
@@ -16,7 +16,7 @@ class Categories(models.Model):
         return self.name
 
 
-class Genres(models.Model):
+class Genre(models.Model):
     """Модель Жанров"""
     name = models.CharField(max_length=256,
                             verbose_name='Название жанра')
@@ -24,9 +24,9 @@ class Genres(models.Model):
                             verbose_name='Slug жанра')
 
 
-class Titles(models.Model):
+class Title(models.Model):
     """Модель Произведений"""
-    category = models.ForeignKey(Categories,
+    category = models.ForeignKey(Category,
                                  on_delete=models.SET_NULL,
                                  related_name='category', null=True, blank=True)
     name = models.CharField(max_length=256,
@@ -36,7 +36,7 @@ class Titles(models.Model):
                                blank=False)
     description = models.TextField(blank=True,
                                    verbose_name='Описание произведения')
-    genres = models.ManyToManyField(Genres,
+    genres = models.ManyToManyField(Genre,
                                     verbose_name="Жанры произведений",
                                     blank=False)
 
@@ -76,12 +76,12 @@ class Review(models.Model):
 
     class Meta:
         ordering = ('pub_date',)
-#        constraints = [
- #           models.UniqueConstraint(
-  #              fields=['title', 'author'],
-   #             name='unique_title_author',
-    #        )
-     #   ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'author'],
+                name='unique_title_author',
+            )
+        ]
         verbose_name = 'отзыв'
         verbose_name_plural = 'Отзывы'
 
