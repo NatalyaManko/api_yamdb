@@ -1,11 +1,14 @@
-from django.shortcuts import render
-from rest_framework import viewsets, permissions, filters
+
+from rest_framework import viewsets, filters
+
 from reviews.models import (Categories,
-                     Genres,
-                     Titles)
+                            Genres,
+                            Titles)
 
 from .permissions import IsOwnerOrReadOnly
-from .serializers import CategorySerializer, GenresSerializer, TitleSerializer
+from .serializers import (CategorySerializer,
+                          GenresSerializer,
+                          TitleSerializer,)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -13,7 +16,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
     permission_classes = (IsOwnerOrReadOnly,)
-    search_fields = ('^name',)
+    search_fields = ('name',)
 
 
 class GenresViewSet(viewsets.ModelViewSet):
@@ -21,7 +24,7 @@ class GenresViewSet(viewsets.ModelViewSet):
     serializer_class = GenresSerializer
     filter_backends = (filters.SearchFilter,)
     permission_classes = (IsOwnerOrReadOnly,)
-    search_fields = ('^name',)
+    search_fields = ('name',)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -30,3 +33,6 @@ class GenresViewSet(viewsets.ModelViewSet):
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Titles.objects.all()
     serializer_class = TitleSerializer
+    filter_backends = (filters.SearchFilter,)
+    permission_classes = (IsOwnerOrReadOnly,)
+    search_fields = ('name', 'year',)

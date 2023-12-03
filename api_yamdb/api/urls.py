@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from api.views import CategoryViewSet, GenresViewSet, TitlesViewSet
 
+
 router_v1 = DefaultRouter()
 
 router_v1.register('categories', CategoryViewSet, 'categories')
