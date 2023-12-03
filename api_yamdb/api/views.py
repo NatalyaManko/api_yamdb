@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, serializers
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
@@ -14,6 +15,8 @@ from .serializers import CategorySerializer, GenresSerializer, TitleSerializer, 
 class ReviewViewSet(viewsets.ModelViewSet):
     """Изменить или удалить отзыв может только автор."""
     serializer_class = ReviewSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('text', 'author', 'score')
  #   permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def get_queryset(self):
@@ -22,12 +25,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title_id = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
-        serializer.save(author=self.request.user, title=title_id)
+        serializer.save(title=title_id) #author=self.request.user, 
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     """Изменить или удалить комментарий может только автор."""
     serializer_class = CommentSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('text', 'author')
  #   permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorPermission]
 
     def get_queryset(self):

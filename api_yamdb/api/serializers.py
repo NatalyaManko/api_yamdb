@@ -1,23 +1,35 @@
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
-
+from django.shortcuts import get_object_or_404
 from reviews.models import Review, Title, Category, Genre, Comment
 from users.models import User
 from django.db.models import Avg
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = SlugRelatedField(
-        read_only=True,
-        slug_field='username',
-        default=serializers.CurrentUserDefault()
-    )
-    title = serializers.HiddenField(
-        default=serializers.CreateOnlyDefault(Title))
-        
+#    author = SlugRelatedField(
+#        read_only=True,
+#        slug_field='username',
+#        default=serializers.CurrentUserDefault()
+#    )
+#    title = serializers.HiddenField(
+#        default=serializers.CreateOnlyDefault(Title))
+    
+    def validate(self, data):
+        title_id = self.context.get('view').kwargs.get('title_id')
+        title = get_object_or_404(Title, pk=title_id)
+        author = self.context.get('request').user.id
+        if self.context.get('request').method == 'POST':
+            if not title.reviews_title.filter(author=author).exists():
+                raise serializers.ValidationError(
+                    f'Вы уже оценили произведение: {title}!'
+                    )
+            return data
+        return data
+
     class Meta:
         model = Review
-        fields = ('id', 'text', 'author', 'score', 'pub_date', 'title',)
+        fields = ('id', 'text', 'author', 'score', 'pub_date')
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -33,7 +45,6 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ('id', 'text', 'author', 'pub_date', 'review',)
-
 
 
 class CategorySerializer(serializers.ModelSerializer):
