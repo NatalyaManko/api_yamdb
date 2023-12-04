@@ -1,10 +1,14 @@
-from django.contrib.auth import get_user_model
+from datetime import datetime
+
+import sqlite3
 from django.core.management.base import BaseCommand
 import csv
 
-from reviews.models import (Genres, Categories, Titles)
+from reviews.models import (Genre, Category,
+                            Title, Comment,
+                            Review,)
 
-User = get_user_model()
+from users.models import User
 
 
 class Command(BaseCommand):
@@ -17,7 +21,7 @@ class Command(BaseCommand):
             first = True
             for row in reader:
                 if not first:
-                    _, created = Genres.objects.get_or_create(
+                    _, created = Genre.objects.get_or_create(
                         name=row[1],
                         slug=row[2],)
                 first = False
@@ -26,30 +30,20 @@ class Command(BaseCommand):
             first = True
             for row in reader:
                 if not first:
-                    _, created = Categories.objects.get_or_create(
+                    _, created = Category.objects.get_or_create(
                         name=row[1],
                         slug=row[2],)
                 first = False
+
         with open('static/data/titles.csv', newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='"')
             first = True
             for row in reader:
                 if not first:
-                    _, created = Titles.objects.get_or_create(
+                    _, created = Title.objects.get_or_create(
                         name=row[1],
                         year=int(row[2]),
                         category_id=int(row[3]),
-                    )
-                first = False
-        return
-        with open('static/data/genre_title.csv', newline='') as csvfile:
-            reader = csv.reader(csvfile, delimiter=',', quotechar='"')
-            first = True
-            for row in reader:
-                if not first:
-                    _, created = GenreTitles.objects.get_or_create(
-                        genre_id=int(row[1]),
-                        title_id=int(row[2]),
                     )
                 first = False
 
@@ -59,8 +53,52 @@ class Command(BaseCommand):
             for row in reader:
                 if not first:
                     _, created = User.objects.get_or_create(
-                        username=int(row[1]),
-                        email=int(row[2]),
-                        role=int(row[3]),
+                        id=row[0],
+                        username=row[1],
+                        email=row[2],
+                        role=row[3],
                     )
                 first = False
+
+        with open('static/data/review.csv', newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',', quotechar='"')
+            first = True
+            for row in reader:
+                if not first:
+                    _, created = Review.objects.get_or_create(
+                        id=int(row[0]),
+                        title_id=int(row[1]),
+                        text=row[2],
+                        author_id=int(row[3]),
+                        score=int(row[4]),
+                        pub_date=datetime.strptime(row[5], '%Y-%m-%dT%H:%M:%S.%fZ')
+                    )
+                first = False
+
+        with open('static/data/comments.csv', newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',', quotechar='"')
+            first = True
+            for row in reader:
+                if not first:
+                    _, created = Comment.objects.get_or_create(
+                        review_id=int(row[1]),
+                        text=row[2],
+                        author_id=int(row[3]),
+                        pub_date=datetime.strptime(row[4], '%Y-%m-%dT%H:%M:%S.%fZ')
+                    )
+                first = False
+
+        con = sqlite3.connect('db.sqlite3')
+        cur = con.cursor()
+        reviews_genres = []
+        with open('static/data/genre_title.csv', newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',', quotechar='"')
+            first = True
+            for row in reader:
+                if not first:
+                    reviews_genres.append((int(row[0]), int(row[1]), int(row[2])))
+                first = False
+
+        cur.executemany('INSERT INTO reviews_title_genres VALUES (?, ?, ?);', reviews_genres)
+        con.commit()
+        con.close()

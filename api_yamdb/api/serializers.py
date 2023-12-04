@@ -3,22 +3,22 @@ from rest_framework import serializers
 
 User = get_user_model()
 
-from reviews.models import (Categories, Genres,
-                            Titles, )
+from reviews.models import (Category, Genre,
+                            Title, )
 
 
 class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор Категорий"""
     class Meta:
         fields = ('name', 'slug',)
-        model = Categories
+        model = Category
 
 
 class GenresSerializer(serializers.ModelSerializer):
     """Сериализатор Жанров"""
     class Meta:
         fields = ('name', 'slug',)
-        model = Genres
+        model = Genre
 
 
 class TitleSerializer(serializers.ModelSerializer):
@@ -29,5 +29,5 @@ class TitleSerializer(serializers.ModelSerializer):
                                   many=False)
 
     class Meta:
-        model = Titles
+        model = Title
         fields = ('id', 'name', 'year', 'description', 'category', 'genre',)
