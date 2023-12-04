@@ -1,13 +1,16 @@
 import secrets
 import string
+from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMessage
-from rest_framework import mixins, status, viewsets
+from rest_framework import filters, status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import action
 
 from api.permissions import AdminPermission
 from api.serializers import (GetTokenSerializer, MeSerializer,
@@ -19,29 +22,28 @@ User = get_user_model()
 class APISignup(APIView):
     permission_classes = (AllowAny,)
 
-    def send_email(email_data):
+    def send_email(self, email_data):
         email = EmailMessage(
             subject=email_data['email_subject'],
             body=email_data['email_body'],
-            to=email_data['to_email']
+            to=[email_data['to_email']]
         )
         email.send()
 
-    def generate_confirmation_code():
+    def generate_confirmation_code(self):
         letters_and_digits = string.ascii_letters + string.digits
         confirmation_code = ''.join(secrets.choice(
             letters_and_digits) for i in range(8))
         return confirmation_code
 
-    def save_confirmation_code(username, code):
+    def save_confirmation_code(self, username, code):
         user = User.objects.filter(username=username)
-        user.confirmation_code = code
-        user.save(update_fields=['confirmation_code'])
+        user.update(confirmation_code=code)
 
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user_data = serializer.data
+        user_data = serializer.validated_data
         confirmation_code = self.generate_confirmation_code()
         email_body = (
             f'Здравствуйте, {user_data["username"]}.'
@@ -53,10 +55,16 @@ class APISignup(APIView):
             'email_subject': 'Код доступа'
         }
         self.send_email(email_data)
-        if User.objects.filter(username=user_data['username']).exists():
+        if User.objects.filter(username=user_data['username'],
+                               email=user_data['email']).exists():
             self.save_confirmation_code(user_data['username'],
                                         confirmation_code)
             return Response(serializer.data, status=status.HTTP_200_OK)
+        if (
+            User.objects.filter(email=user_data['email']).exists()
+            or User.objects.filter(username=user_data['username']).exists()
+        ):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
         self.save_confirmation_code(user_data['username'],
                                     confirmation_code)
@@ -81,15 +89,27 @@ class APIGetToken(APIView):
 
 class UsersViewSet(ModelViewSet):
     queryset = User.objects.all()
+    http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = UsersSerializer
     permission_classes = (IsAuthenticated, AdminPermission,)
+    pagination_class = PageNumberPagination
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
+    search_fields = ('username',)
     lookup_field = 'username'
 
-
-class MeViewSet(mixins.RetrieveModelMixin,
-                mixins.UpdateModelMixin, viewsets.GenericViewSet):
-    serializer_class = MeSerializer
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        return self.request.user
+    @action(
+        methods=['GET', 'PATCH'],
+        detail=False,
+        permission_classes=(IsAuthenticated,),
+        url_path='me'
+    )
+    def get_me(self, request):
+        serializer = MeSerializer(
+            request.user,
+            data=request.data,
+            partial=True)
+        serializer.is_valid(raise_exception=True)
+        if request.method == 'PATCH':
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
