@@ -1,6 +1,6 @@
 import secrets
 import string
-from django.contrib.auth import get_user_model
+
 from django.core.mail import EmailMessage
 from rest_framework import filters, status
 from rest_framework.pagination import PageNumberPagination
@@ -15,12 +15,15 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets, mixins, status
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from reviews.models import Category, Genre, Review, Title
-from users.models import User
+from django.contrib.auth import get_user_model
+from rest_framework.decorators import action
 from .permissions import AdminPermission, IsOwnerOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenresSerializer, ReviewSerializer, TitleSerializer, 
                           GetTokenSerializer, MeSerializer,
                           SignUpSerializer, UsersSerializer)
+
+User = get_user_model()
 
 
 class APISignup(APIView):
@@ -96,7 +99,7 @@ class UsersViewSet(ModelViewSet):
     http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = UsersSerializer
     permission_classes = (IsAuthenticated, AdminPermission,)
-    pagination_class = PageNumberPagination
+#    pagination_class = PageNumberPagination # проверим как работает на уровне проекта
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     search_fields = ('username',)
     lookup_field = 'username'
@@ -114,9 +117,9 @@ class UsersViewSet(ModelViewSet):
             partial=True)
         serializer.is_valid(raise_exception=True)
         if request.method == 'PATCH':
-            serializer.save()
+            serializer.save()  # Добавила бы параметр User role=request.user.role
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -124,10 +127,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('text', 'author', 'score')
-  #  permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def get_queryset(self):
-        title_id = get_object_or_404(Title, pk=self.kwargs['title_id'])
+        title_id = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
         return title_id.reviews_title.all()
 
     def perform_create(self, serializer):
@@ -140,7 +143,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('text', 'author')
- #   permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def get_queryset(self):
         review_id = get_object_or_404(Review, pk=self.kwargs['review_pk'])

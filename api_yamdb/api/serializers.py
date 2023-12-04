@@ -4,8 +4,10 @@ from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from django.shortcuts import get_object_or_404
 from reviews.models import Review, Title, Category, Genre, Comment
-from users.models import User
+
 from django.db.models import Avg
+
+User = get_user_model()
 
 
 class UsersSerializer(serializers.ModelSerializer):
@@ -66,15 +68,19 @@ class ReviewSerializer(serializers.ModelSerializer):
     def validate(self, data):
         title_id = self.context.get('view').kwargs.get('title_id')
         title = get_object_or_404(Title, pk=title_id)
-        author = self.context.get('request').user.id
+        author = self.context.get('request').user
         if self.context.get('request').method == 'POST':
-            if not title.reviews_title.filter(author=author, title=title).exists():
+            if not title.Review.objects.filter(author=author, title=title).exists():
                 raise serializers.ValidationError(
                     f'Вы уже оценили произведение: {title}!'
                     )
             return data
+        if self.context.get('request').method == 'PUT':
+            raise serializers.ValidationError(
+                    f'PUT-запрос не предусмотрен!'
+                    )
         return data
-    
+
     class Meta:
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date')
@@ -87,6 +93,9 @@ class CommentSerializer(serializers.ModelSerializer):
         slug_field='username',
         default=serializers.CurrentUserDefault()
     )
+
+    def get_kwargs_create(self, data):
+        return self.context.get('view').kwargs.get('review_id') # Проверить еще раз создание коммента
 
     class Meta:
         model = Comment
