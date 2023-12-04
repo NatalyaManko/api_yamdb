@@ -1,13 +1,12 @@
 from datetime import datetime
-
 import sqlite3
-from django.core.management.base import BaseCommand
 import csv
+
+from django.core.management.base import BaseCommand
 
 from reviews.models import (Genre, Category,
                             Title, Comment,
                             Review,)
-
 from users.models import User
 
 

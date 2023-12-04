@@ -1,4 +1,4 @@
-
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, filters
 
 from reviews.models import (Category,
@@ -9,7 +9,7 @@ from reviews.models import (Category,
 
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (CategorySerializer,
-                          GenresSerializer,
+                          GenreSerializer,
                           TitleSerializer,)
 
 
@@ -23,7 +23,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 class GenresViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
-    serializer_class = GenresSerializer
+    serializer_class = GenreSerializer
     filter_backends = (filters.SearchFilter,)
     permission_classes = (IsOwnerOrReadOnly,)
     search_fields = ('name',)
@@ -35,6 +35,7 @@ class GenresViewSet(viewsets.ModelViewSet):
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
-    filter_backends = (filters.SearchFilter,)
+    filter_backends = (DjangoFilterBackend,)
     permission_classes = (IsOwnerOrReadOnly,)
-    search_fields = ('name', 'year',)
+    filterset_fields = ('category__slug', 'genres__slug',
+                        'name', 'year')
