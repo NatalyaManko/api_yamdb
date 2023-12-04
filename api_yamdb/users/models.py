@@ -14,11 +14,13 @@ ROLES = (
 class User(AbstractUser):
     username = models.CharField(
         _('username'),
+        validators=(AbstractUser.username_validator, validate_username,),
         max_length=150,
         unique=True,
+        blank=False,
+        null=False,
         help_text=_('Required. 150 characters or fewer.'
                     'Letters, digits and @/./+/-/_ only.'),
-        validators=[AbstractUser.username_validator, validate_username],
         error_messages={
             'unique': _("A user with that username already exists."),
         },
@@ -26,7 +28,10 @@ class User(AbstractUser):
 
     email = models.EmailField(
         _('email address'),
-        unique=True
+        max_length=254,
+        unique=True,
+        blank=False,
+        null=False
     )
 
     bio = models.TextField(
@@ -47,5 +52,27 @@ class User(AbstractUser):
         blank=False,
         null=True
     )
+    first_name = models.CharField(
+        'имя',
+        max_length=150,
+        blank=True
+    )
+    last_name = models.CharField(
+        'фамилия',
+        max_length=150,
+        blank=True
+    )
 
     REQUIRED_FIELDS = []
+
+    @property
+    def is_user(self):
+        return self.role == 'user'
+
+    @property
+    def is_moderator(self):
+        return self.role == 'moderator'
+
+    @property
+    def is_admin(self):
+        return self.role == 'admin'
