@@ -41,11 +41,11 @@ class User(AbstractUser):
 
     role = models.CharField(
         _('Роль пользователя'),
-        max_length=9,
+        max_length=30,
         choices=ROLES,
-        default='user',
-        blank=True
+        default='user'
     )
+
     confirmation_code = models.CharField(
         _('код подтверждения'),
         max_length=8,
@@ -53,12 +53,12 @@ class User(AbstractUser):
         null=True
     )
     first_name = models.CharField(
-        'имя',
+        _('имя'),
         max_length=150,
         blank=True
     )
     last_name = models.CharField(
-        'фамилия',
+        _('фамилия'),
         max_length=150,
         blank=True
     )
@@ -76,3 +76,8 @@ class User(AbstractUser):
     @property
     def is_admin(self):
         return self.role == 'admin'
+
+    class Meta:
+        ordering = ('username',)
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
