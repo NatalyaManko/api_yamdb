@@ -70,7 +70,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         title = get_object_or_404(Title, pk=title_id)
         author = self.context.get('request').user
         if self.context.get('request').method == 'POST':
-            if not Review.objects.filter(author=author, title=title).exists():  # поменялы
+            if not title.Review.objects.filter(author=author, title=title).exists():
                 raise serializers.ValidationError(
                     f'Вы уже оценили произведение: {title}!'
                     )
