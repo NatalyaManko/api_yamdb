@@ -3,23 +3,22 @@ import string
 
 from django.core.mail import EmailMessage
 from rest_framework import filters, status
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, viewsets, mixins, status
+from rest_framework import filters, viewsets, status
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from reviews.models import Category, Genre, Review, Title
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import action
-from .permissions import AdminPermission, IsOwnerOrReadOnly
+
+from .permissions import AdminPermission, IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
-                          GenresSerializer, ReviewSerializer, TitleSerializer, 
+                          GenresSerializer, ReviewSerializer, TitleSerializer,
                           GetTokenSerializer, MeSerializer,
                           SignUpSerializer, UsersSerializer)
 
@@ -27,7 +26,6 @@ User = get_user_model()
 
 
 class APISignup(APIView):
-    permission_classes = (AllowAny,)
 
     def send_email(self, email_data):
         email = EmailMessage(
@@ -99,7 +97,6 @@ class UsersViewSet(ModelViewSet):
     http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = UsersSerializer
     permission_classes = (IsAuthenticated, AdminPermission,)
-#    pagination_class = PageNumberPagination # проверим как работает на уровне проекта
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     search_fields = ('username',)
     lookup_field = 'username'
@@ -156,26 +153,34 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
+    http_method_names = ('get', 'post', 'delete',)
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
-    permission_classes = (IsOwnerOrReadOnly,)
+    permission_classes = (IsAdminOrReadOnly,)
     search_fields = ('name',)
+    lookup_field = 'slug'
+
+    def retrieve(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class GenresViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
+    http_method_names = ('get', 'post', 'delete',)
     serializer_class = GenresSerializer
     filter_backends = (filters.SearchFilter,)
-    permission_classes = (IsOwnerOrReadOnly,)
+    permission_classes = (IsAdminOrReadOnly,)
     search_fields = ('name',)
+    lookup_field = 'slug'
 
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+    def retrieve(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
+    http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = TitleSerializer
     filter_backends = (filters.SearchFilter,)
-    permission_classes = (IsOwnerOrReadOnly,)
+    permission_classes = (IsAdminOrReadOnly,)
     search_fields = ('name', 'year',)

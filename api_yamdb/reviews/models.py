@@ -54,13 +54,13 @@ class Review(models.Model):
         on_delete=models.CASCADE,
         related_name='reviews_title',
         verbose_name='Произведение',
-        )
+    )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='reviews',
         verbose_name='Автор отзыва'
-        )
+    )
     score = models.PositiveSmallIntegerField(
         'Оценка произведения',
         validators=[
@@ -68,13 +68,13 @@ class Review(models.Model):
                 1, message='Ожидается оценка от 1 до 10'),
             MaxValueValidator(
                 10, message='Ожидается оценка от 1 до 10')
-            ]
-        )
+        ]
+    )
     pub_date = models.DateTimeField(
         'Дата публикации',
         auto_now_add=True,
         db_index=True
-        )
+    )
 
     class Meta:
         ordering = ('pub_date',)
@@ -99,18 +99,18 @@ class Comment(models.Model):
         on_delete=models.CASCADE,
         related_name='comments',
         verbose_name='Автор комментария'
-        )
+    )
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
         related_name='comments',
         verbose_name='Отзыв'
-        )
+    )
     pub_date = models.DateTimeField(
         'Дата добавления',
         auto_now_add=True,
         db_index=True
-        )
+    )
 
     class Meta:
         ordering = ('pub_date',)
