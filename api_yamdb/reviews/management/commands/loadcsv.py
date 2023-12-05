@@ -21,6 +21,7 @@ class Command(BaseCommand):
             for row in reader:
                 if not first:
                     _, created = Genre.objects.get_or_create(
+                        id=int(row[0]),
                         name=row[1],
                         slug=row[2],)
                 first = False
@@ -30,6 +31,7 @@ class Command(BaseCommand):
             for row in reader:
                 if not first:
                     _, created = Category.objects.get_or_create(
+                        id=int(row[0]),
                         name=row[1],
                         slug=row[2],)
                 first = False
@@ -40,6 +42,7 @@ class Command(BaseCommand):
             for row in reader:
                 if not first:
                     _, created = Title.objects.get_or_create(
+                        id=int(row[0]),
                         name=row[1],
                         year=int(row[2]),
                         category_id=int(row[3]),
@@ -80,6 +83,7 @@ class Command(BaseCommand):
             for row in reader:
                 if not first:
                     _, created = Comment.objects.get_or_create(
+                        id=int(row[0]),
                         review_id=int(row[1]),
                         text=row[2],
                         author_id=int(row[3]),
