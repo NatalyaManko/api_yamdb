@@ -30,7 +30,8 @@ class Title(models.Model):
     """Модель Произведений"""
     category = models.ForeignKey(Category,
                                  on_delete=models.SET_NULL,
-                                 related_name='category', null=True, blank=True)
+                                 related_name='category',
+                                 null=True)
     name = models.CharField(max_length=256,
                             verbose_name='Название произведения',
                             blank=False)
@@ -39,8 +40,10 @@ class Title(models.Model):
     description = models.TextField(blank=True,
                                    verbose_name='Описание произведения')
     genres = models.ManyToManyField(Genre,
-                                    verbose_name="Жанры произведений",
+                                    verbose_name='Жанры произведений',
                                     blank=False)
+    rating = models.PositiveIntegerField(null=True,
+                                         verbose_name='Рейтинг произведений')
 
     def __str__(self):
         return self.name

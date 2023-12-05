@@ -3,7 +3,8 @@ import string
 
 from django.core.mail import EmailMessage
 from rest_framework import filters, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -11,7 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets, status
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated
 from reviews.models import Category, Genre, Review, Title
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import action
@@ -124,30 +125,42 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('text', 'author', 'score')
-    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly,
+                          IsAuthenticated,
+                          IsOwnerOrReadOnly,
+                          IsAdminOrReadOnly,
+                          AdminPermission]
 
     def get_queryset(self):
         title_id = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
-        return title_id.reviews_title.all()
+        return Review.objects.filter(title=title_id)
 
     def perform_create(self, serializer):
         title_id = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
         serializer.save(author=self.request.user, title=title_id)
 
+   #def create(self, request, *args, **kwargs):
+ #       return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+#   def destroy(self, request, *args, **kwargs):
+  #      return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    #def update(self, request, *args, **kwargs):
+     #   return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 class CommentViewSet(viewsets.ModelViewSet):
     """Изменить или удалить комментарий может автор."""
     serializer_class = CommentSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('text', 'author')
-    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    permission_classes = [IsOwnerOrReadOnly,
+                          IsAdminOrReadOnly,
+                          AdminPermission]
 
     def get_queryset(self):
-        review_id = get_object_or_404(Review, pk=self.kwargs['review_pk'])
+        review_id = get_object_or_404(Review, pk=self.kwargs['review_id'])
         return review_id.comments.all()
 
     def perform_create(self, serializer):
-        review_id = get_object_or_404(Review, pk=self.kwargs.get('review_pk'))
+        review_id = get_object_or_404(Review, pk=self.kwargs.get('review_id'))
         serializer.save(author=self.request.user, review=review_id)
 
 

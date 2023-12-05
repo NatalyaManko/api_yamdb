@@ -126,9 +126,10 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'rating', 'description', 'category', 'genres',)
+        fields = ('id', 'name', 'year', 'rating', 'description', 'genres', 'category')
 
     def get_rating(self, obj):
         score = Review.objects.filter(
-            title=obj).aggregate(rating=(Avg('score')))
-        return int(score['rating'] if score['rating'] else 0)
+            title=obj
+        ).aggregate(rating=(Avg('score')))
+        return int(score['rating']) if score['rating'] else None  #if score['rating'] else 0) == 0 else int(score['rating'] if score['rating'] else 0)
