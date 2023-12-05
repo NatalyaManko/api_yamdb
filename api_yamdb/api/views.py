@@ -121,6 +121,7 @@ class UsersViewSet(ModelViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     """Изменить или удалить отзыв может только автор."""
+    http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = ReviewSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('text', 'author', 'score')
@@ -137,17 +138,18 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     """Изменить или удалить комментарий может автор."""
+    http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = CommentSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('text', 'author')
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def get_queryset(self):
-        review_id = get_object_or_404(Review, pk=self.kwargs['review_pk'])
+        review_id = get_object_or_404(Review, id=self.kwargs['review_id'])
         return review_id.comments.all()
 
     def perform_create(self, serializer):
-        review_id = get_object_or_404(Review, pk=self.kwargs.get('review_pk'))
+        review_id = get_object_or_404(Review, id=self.kwargs.get('review_id'))
         serializer.save(author=self.request.user, review=review_id)
 
 
