@@ -119,7 +119,8 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleSerializer(serializers.ModelSerializer):
     """Сериализатор Произведений"""
     genre = GenreSerializer(many=True,
-                            read_only=True,
+#                            queryset=Genre.objects.all(),
+#                            read_only=True,
                             required=False)
     category = CategorySerializer(read_only=True)
     rating = serializers.SerializerMethodField()
