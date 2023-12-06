@@ -14,7 +14,7 @@ ROLES = (
 class User(AbstractUser):
     username = models.CharField(
         _('username'),
-        validators=(AbstractUser.username_validator, validate_username,),
+        validators=(validate_username,),
         max_length=150,
         unique=True,
         blank=False,

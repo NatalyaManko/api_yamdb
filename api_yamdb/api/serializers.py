@@ -1,4 +1,5 @@
 import re
+
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
@@ -43,16 +44,17 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if data['username'] == 'me':
-            raise serializers.ValidationError('me - недопустимое'
-                                              'имя пользователя')
+            raise serializers.ValidationError({'username': 'me - недопустимое'
+                                              'имя пользователя'})
         if re.search(r'^[\w.@+-]+\Z', data['username']) is None:
-            raise serializers.ValidationError('Недопустимые символы')
+            raise serializers.ValidationError({'username':
+                                               'Недопустимые символы'})
         return data
 
 
 class GetTokenSerializer(serializers.ModelSerializer):
-    """Сериализатор подьзователя для получения токена"""
-    username = serializers.CharField(required=True)
+    username = serializers.CharField(max_length=150,
+                                     required=True)
     confirmation_code = serializers.CharField(required=True)
 
     class Meta:
