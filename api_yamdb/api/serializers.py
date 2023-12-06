@@ -1,9 +1,11 @@
+import datetime
 import re
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from django.shortcuts import get_object_or_404
-from reviews.models import Review, Title, Category, Genre, Comment
+from reviews.models import (Review, Title, Category,
+                            Genre, Comment, TitleGenre)
 from datetime import date
 from django.db.models import Avg
 
@@ -119,11 +121,35 @@ class GenresSerializer(serializers.ModelSerializer):
 
 class TitleSerializer(serializers.ModelSerializer):
     """Сериализатор Произведений"""
-    genres = GenresSerializer(many=True,
-                              read_only=False,
-                              required=False)
-    category = CategorySerializer(read_only=True)
+    genre = GenresSerializer(many=True,
+                             read_only=False,)
+    category = CategorySerializer(read_only=True,)
     rating = serializers.SerializerMethodField()
+
+    def validate(self, data):
+        if isinstance(data['year'], int):
+            if data['year'] > datetime.date.today().year:
+                serializers.ValidationError(
+                    'Год не быть больше текущего')
+        else:
+            serializers.ValidationError('Год должен быть числом!!!')
+        return data
+
+    def save(self, validated_data):
+        genres = validated_data.pop('genre')
+        title = Title.objects.create(**validated_data)
+
+        for genre in genres:
+            current_genre, status = Genre.objects.get_or_create(**genre)
+            TitleGenre.objects.create(current_genre, title=title)
+
+        return title
+
+    def get_rating(self, obj):
+        score = Review.objects.filter(
+            title=obj
+        ).aggregate(rating=(Avg('score')))
+        return int(score['rating']) if score['rating'] else None
 
     class Meta:
         model = Title
@@ -132,18 +158,7 @@ class TitleSerializer(serializers.ModelSerializer):
                   'year',
                   'rating',
                   'description',
-                  'genres',
+                  'genre',
                   'category')
 
-    def validate(self, data):
-        if data['year'] > date.today().year:
-            raise serializers.ValidationError(
-                'Дата произведения не может быть будущим годом!'
-            )
-        return data
 
-    def get_rating(self, obj):
-        score = Review.objects.filter(
-            title=obj
-        ).aggregate(rating=(Avg('score')))
-        return int(score['rating']) if score['rating'] else None
