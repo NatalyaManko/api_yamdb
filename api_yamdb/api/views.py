@@ -26,7 +26,7 @@ User = get_user_model()
 
 
 class APISignup(APIView):
-
+    """Регистрации и получение кода подтверждения по почте"""
     def send_email(self, email_data):
         email = EmailMessage(
             subject=email_data['email_subject'],
@@ -77,6 +77,7 @@ class APISignup(APIView):
 
 
 class APIGetToken(APIView):
+    """Получение токена"""
     def post(self, request):
         serializer = GetTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -93,6 +94,8 @@ class APIGetToken(APIView):
 
 
 class UsersViewSet(ModelViewSet):
+    """Создание, получение, изменение объектов User администратором.
+    Получение и изменение пользователем своего объекта User"""
     queryset = User.objects.all()
     http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = UsersSerializer

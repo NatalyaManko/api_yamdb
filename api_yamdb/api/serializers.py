@@ -11,7 +11,8 @@ User = get_user_model()
 
 
 class UsersSerializer(serializers.ModelSerializer):
-
+    """Сериализатор подьзователя для дейтсвий
+    с использованием прав администратора"""
     class Meta:
         model = User
         fields = (
@@ -21,10 +22,13 @@ class UsersSerializer(serializers.ModelSerializer):
 
 
 class MeSerializer(UsersSerializer):
+    """Сериализатор подьзователя для дейтсвий
+    без использования прав администратора"""
     role = serializers.CharField(read_only=True)
 
 
 class SignUpSerializer(serializers.ModelSerializer):
+    """Сериализатор для регистрации пользователя"""
     email = serializers.EmailField(max_length=254,
                                    required=True)
     username = serializers.CharField(max_length=150,
@@ -47,6 +51,7 @@ class SignUpSerializer(serializers.ModelSerializer):
 
 
 class GetTokenSerializer(serializers.ModelSerializer):
+    """Сериализатор подьзователя для получения токена"""
     username = serializers.CharField(required=True)
     confirmation_code = serializers.CharField(required=True)
 
