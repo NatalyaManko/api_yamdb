@@ -112,7 +112,7 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
 
 
-class GenresSerializer(serializers.ModelSerializer):
+class GenreSerializer(serializers.ModelSerializer):
     """Сериализатор Жанров"""
     class Meta:
         fields = ('name', 'slug',)
@@ -121,29 +121,10 @@ class GenresSerializer(serializers.ModelSerializer):
 
 class TitleSerializer(serializers.ModelSerializer):
     """Сериализатор Произведений"""
-    genre = GenresSerializer(many=True,
-                             read_only=False,)
+    genre = GenreSerializer(many=True,
+                             read_only=False)
     category = CategorySerializer(read_only=True,)
     rating = serializers.SerializerMethodField()
-
-    def validate(self, data):
-        if isinstance(data['year'], int):
-            if data['year'] > datetime.date.today().year:
-                serializers.ValidationError(
-                    'Год не быть больше текущего')
-        else:
-            serializers.ValidationError('Год должен быть числом!!!')
-        return data
-
-    def save(self, validated_data):
-        genres = validated_data.pop('genre')
-        title = Title.objects.create(**validated_data)
-
-        for genre in genres:
-            current_genre, status = Genre.objects.get_or_create(**genre)
-            TitleGenre.objects.create(current_genre, title=title)
-
-        return title
 
     def get_rating(self, obj):
         score = Review.objects.filter(
@@ -162,3 +143,46 @@ class TitleSerializer(serializers.ModelSerializer):
                   'category')
 
 
+class TitleCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор Произведений"""
+    genre = serializers.SlugRelatedField(slug_field='slug',
+                                         many=True,
+                                         read_only=True)
+    category = serializers.SlugRelatedField(read_only=True, slug_field='slug')
+
+    def validate(self, data):
+        if isinstance(data['year'], int):
+            if data['year'] > datetime.date.today().year:
+                serializers.ValidationError(
+                    'Год не быть больше текущего')
+        else:
+            serializers.ValidationError('Год должен быть числом!!!')
+        return data
+
+    def save(self, **validated_data):
+        data = validated_data.get('data')
+        genres = data.pop('genre')
+        category_slug = data.pop('category')
+        category, status = Category.objects.get_or_create(slug=category_slug)
+        title = Title.objects.create(**data, category=category)
+
+        for slug_genre in genres:
+            current_genre, status = Genre.objects.get_or_create(slug=slug_genre)
+            TitleGenre.objects.create(genre=current_genre,
+                                      title=title)
+        return title
+
+    def get_rating(self, obj):
+        score = Review.objects.filter(
+            title=obj
+        ).aggregate(rating=(Avg('score')))
+        return int(score['rating']) if score['rating'] else None
+
+    class Meta:
+        model = Title
+        fields = ('id',
+                  'name',
+                  'year',
+                  'description',
+                 'genre',
+                  'category')
