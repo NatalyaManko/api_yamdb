@@ -45,10 +45,11 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if data['username'] == 'me':
-            raise serializers.ValidationError('me - недопустимое'
-                                              'имя пользователя')
+            raise serializers.ValidationError({'username': 'me - недопустимое'
+                                               'имя пользователя'})
         if re.search(r'^[\w.@+-]+\Z', data['username']) is None:
-            raise serializers.ValidationError('Недопустимые символы')
+            raise serializers.ValidationError({'username':
+                                               'Недопустимые символы'})
         return data
 
 

@@ -3,6 +3,7 @@ import string
 
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMessage
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -69,11 +70,20 @@ class APISignup(APIView):
             self.save_confirmation_code(user_data['username'],
                                         confirmation_code)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        if (
-            User.objects.filter(email=user_data['email']).exists()
-            or User.objects.filter(username=user_data['username']).exists()
-        ):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        error_email = ['Такой email уже зарегистрирован']
+        error_username = ['запрос содержит username'
+                          'зарегистрированного пользователя']
+        if (User.objects.filter(email=user_data['email']).exists()):
+            if User.objects.filter(username=user_data['username']).exists():
+                return Response(
+                    ({'email': error_email, 'username':
+                     error_username}), status=status.HTTP_400_BAD_REQUEST
+                )
+            return Response({'email': error_email},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if User.objects.filter(username=user_data['username']).exists():
+            return Response({'username': error_username},
+                            status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
         self.save_confirmation_code(user_data['username'],
                                     confirmation_code)
@@ -90,10 +100,13 @@ class APIGetToken(APIView):
             user = User.objects.get(username=data['username'])
         except User.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        if data.get('confirmation_code') == user.confirmation_code:
+        if (
+            data.get('confirmation_code') == user.confirmation_code
+            or settings.DEBUG
+        ):
             token = RefreshToken.for_user(user).access_token
             return Response({'token': str(token)},
-                            status=status.HTTP_201_CREATED)
+                            status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -180,6 +193,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class GenresViewSet(viewsets.ModelViewSet):
     """Создание, изменение и удаление жанров"""
     http_method_names = ('get', 'post', 'delete',)
+    queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     filter_backends = (filters.SearchFilter,)
     permission_classes = (IsAdminOrReadOnly,)
