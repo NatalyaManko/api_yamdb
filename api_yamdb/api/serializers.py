@@ -1,18 +1,20 @@
 import datetime
 import re
+
 from django.contrib.auth import get_user_model
+from django.db.models import Avg
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
-from django.shortcuts import get_object_or_404
-from reviews.models import (Review, Title, Category,
-                            Genre, Comment, TitleGenre)
-from datetime import date
-from django.db.models import Avg
+
+from reviews.models import Category, Comment, Genre, Review, Title
 
 User = get_user_model()
 
 
 class UsersSerializer(serializers.ModelSerializer):
+    """Сериализатор пользователя для действий с
+       использованием прав администратора"""
 
     class Meta:
         model = User
@@ -23,10 +25,14 @@ class UsersSerializer(serializers.ModelSerializer):
 
 
 class MeSerializer(UsersSerializer):
+    """Сериализатор пользователя для действий с
+       использованием прав администратора"""
+
     role = serializers.CharField(read_only=True)
 
 
 class SignUpSerializer(serializers.ModelSerializer):
+    """Сериализатор для регистрации пользователя"""
     email = serializers.EmailField(max_length=254,
                                    required=True)
     username = serializers.CharField(max_length=150,
@@ -49,6 +55,7 @@ class SignUpSerializer(serializers.ModelSerializer):
 
 
 class GetTokenSerializer(serializers.ModelSerializer):
+    """Сериализатор для регистрации пользователя"""
     username = serializers.CharField(required=True)
     confirmation_code = serializers.CharField(required=True)
 
@@ -61,6 +68,7 @@ class GetTokenSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    """Сериализатор Отзывов"""
     author = SlugRelatedField(
         read_only=True,
         slug_field='username',
@@ -72,17 +80,11 @@ class ReviewSerializer(serializers.ModelSerializer):
         title = get_object_or_404(Title, pk=title_id)
         author = self.context.get('request').user
         if self.context.get('request').method == 'POST':
-            if Review.objects.filter(author=author, title=title).exists():  # поменядлы
+            if Review.objects.filter(author=author, title=title).exists():
                 raise serializers.ValidationError(
-                    f'Вы уже оценили произведение: {title}!'
-                    )
+                    f'Вы уже оценили произведение: {title}!')
             return data
         return data
-#        if self.context.get('request').method == 'PUT':
- #           raise serializers.ValidationError(
-  #                  f'PUT-запрос не предусмотрен!'
-   #                 )
-    #    return data
 
     class Meta:
         model = Review
@@ -96,9 +98,6 @@ class CommentSerializer(serializers.ModelSerializer):
         slug_field='username',
         default=serializers.CurrentUserDefault()
     )
-
-#    def get_kwargs_create(self, data):
-#        return self.context.get('view').kwargs.get('review_id') # Проверить еще раз создание коммента
 
     class Meta:
         model = Comment
@@ -120,10 +119,10 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    """Сериализатор Произведений"""
+    """Сериализатор Чтение данных произведений"""
     genre = GenreSerializer(many=True,
-                             read_only=False)
-    category = CategorySerializer(read_only=True,)
+                            read_only=False)
+    category = CategorySerializer(read_only=True)
     rating = serializers.SerializerMethodField()
 
     def get_rating(self, obj):
@@ -163,11 +162,6 @@ class TitleCreateSerializer(serializers.ModelSerializer):
             else:
                 serializers.ValidationError('Год должен быть числом!!!')
         return data
-    def get_rating(self, obj):
-        score = Review.objects.filter(
-            title=obj
-        ).aggregate(rating=(Avg('score')))
-        return int(score['rating']) if score['rating'] else None
 
     class Meta:
         model = Title

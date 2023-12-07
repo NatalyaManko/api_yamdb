@@ -2,30 +2,38 @@ import secrets
 import string
 
 import django_filters
+from django.contrib.auth import get_user_model
 from django.core.mail import EmailMessage
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, viewsets, status
+
 from reviews.models import Category, Genre, Review, Title
-from django.contrib.auth import get_user_model
-from rest_framework.decorators import action
 
 from .permissions import AdminPermission, IsAdminOrReadOnly, IsOwnerOrReadOnly
-from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSerializer, ReviewSerializer, TitleSerializer,
-                          GetTokenSerializer, MeSerializer,
-                          SignUpSerializer, UsersSerializer, TitleCreateSerializer)
+from .serializers import (CategorySerializer,
+                          CommentSerializer,
+                          GenreSerializer,
+                          GetTokenSerializer,
+                          MeSerializer,
+                          ReviewSerializer,
+                          SignUpSerializer,
+                          TitleCreateSerializer,
+                          TitleSerializer,
+                          UsersSerializer)
 
 User = get_user_model()
 
 
 class APISignup(APIView):
+    """Регистрация и получение кода подтверждения по почте"""
 
     def send_email(self, email_data):
         email = EmailMessage(
@@ -77,6 +85,8 @@ class APISignup(APIView):
 
 
 class APIGetToken(APIView):
+    """Получение токена"""
+
     def post(self, request):
         serializer = GetTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -93,6 +103,8 @@ class APIGetToken(APIView):
 
 
 class UsersViewSet(ModelViewSet):
+    """Создание, получение, изменение объектов User администратором.
+       Получение и изменение пользователем своего объекта User"""
     queryset = User.objects.all()
     http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = UsersSerializer
@@ -114,13 +126,13 @@ class UsersViewSet(ModelViewSet):
             partial=True)
         serializer.is_valid(raise_exception=True)
         if request.method == 'PATCH':
-            serializer.save()  # Добавила бы параметр User role=request.user.role
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    """Изменить или удалить отзыв может только автор."""
+    """Создание, изменение и удаление отзывов"""
     http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = ReviewSerializer
     filter_backends = (DjangoFilterBackend,)
@@ -138,7 +150,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    """Изменить или удалить комментарий может автор."""
+    """Создание, изменение и удаление комментариев"""
     http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = CommentSerializer
     filter_backends = (DjangoFilterBackend,)
@@ -156,6 +168,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
+    """Создание, изменение и удаление категорий"""
     queryset = Category.objects.all()
     http_method_names = ('get', 'post', 'delete',)
     serializer_class = CategorySerializer
@@ -169,6 +182,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 
 class GenresViewSet(viewsets.ModelViewSet):
+    """Создание, изменение и удаление жанров"""
     queryset = Genre.objects.all()
     http_method_names = ('get', 'post', 'delete',)
     serializer_class = GenreSerializer
@@ -200,10 +214,7 @@ class TitlesViewSet(viewsets.ModelViewSet):
     filterset_class = TitleFilter
     search_fields = ('name', 'year', 'category', 'genre',)
 
-
     def get_serializer_class(self):
         if self.request.method in ('POST', 'PATCH'):
             return TitleCreateSerializer
         return TitleSerializer
-
-

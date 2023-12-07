@@ -1,6 +1,6 @@
+from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -42,7 +42,8 @@ class Title(models.Model):
     rating = models.PositiveIntegerField(null=True,
                                          verbose_name='Рейтинг произведений')
     genre = models.ManyToManyField(Genre,
-                                   verbose_name='Жанры произведений', through='TitleGenre')
+                                   verbose_name='Жанры произведений',
+                                   through='TitleGenre')
 
     def __str__(self):
         return self.name

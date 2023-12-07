@@ -1,12 +1,10 @@
-from datetime import datetime
-import sqlite3
 import csv
+import sqlite3
+from datetime import datetime
 
 from django.core.management.base import BaseCommand
 
-from reviews.models import (Genre, Category,
-                            Title, Comment,
-                            Review,)
+from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
 
 
@@ -66,7 +64,9 @@ class Command(BaseCommand):
                                 text=row[2],
                                 author_id=int(row[3]),
                                 score=int(row[4]),
-                                pub_date=datetime.strptime(row[5], '%Y-%m-%dT%H:%M:%S.%fZ'))
+                                pub_date=datetime.strptime(
+                                    row[5],
+                                    '%Y-%m-%dT%H:%M:%S.%fZ'))
 
                         elif name == 'comment':
                             _, created = Comment.objects.get_or_create(
@@ -77,12 +77,15 @@ class Command(BaseCommand):
                                 pub_date=datetime.strptime(
                                     row[4], '%Y-%m-%dT%H:%M:%S.%fZ'))
                         elif name == 'title_genre':
-                            reviews_title_genre.append((int(row[0]), int(row[1]), int(row[2])))
+                            reviews_title_genre.append((int(row[0]),
+                                                        int(row[1]),
+                                                        int(row[2])))
                     first = False
 
         con = sqlite3.connect('db.sqlite3')
         cur = con.cursor()
         cur.executemany(
-            'INSERT INTO reviews_titlegenre VALUES (?, ?, ?);', reviews_title_genre)
+            'INSERT INTO reviews_titlegenre VALUES (?, ?, ?);',
+            reviews_title_genre)
         con.commit()
         con.close()
