@@ -144,9 +144,9 @@ https://github.com/NatalyaManko
 eMail: natalamanko955@gmail.com
 
 Алексей Сухоруков
-https:
-eMail:
+https://github.com/AlekseySuhorukov 
+eMail: aleksey.suhorukov2@gmail.com
 
 Ринат Сайфулин
-https:
-eMail:
+https://github.com/RinatChel 
+eMail: saifullinrg@yandex.ru
