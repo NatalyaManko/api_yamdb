@@ -1,6 +1,7 @@
 import secrets
 import string
 
+import django_filters
 from django.core.mail import EmailMessage
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
@@ -95,7 +96,7 @@ class UsersViewSet(ModelViewSet):
     queryset = User.objects.all()
     http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = UsersSerializer
-    #permission_classes = (,)
+    permission_classes = (IsAuthenticated, AdminPermission,)
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     search_fields = ('username',)
     lookup_field = 'username'
@@ -180,18 +181,29 @@ class GenresViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
+class TitleFilter(django_filters.FilterSet):
+    genre = django_filters.CharFilter(field_name='genre__slug',
+                                      lookup_expr='iexact')
+    category = django_filters.CharFilter(field_name='category__slug',
+                                         lookup_expr='iexact')
+
+    class Meta:
+        model = Title
+        fields = ['genre', 'category', 'name', 'year']
+
+
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     http_method_names = ('get', 'post', 'patch', 'delete',)
-    #serializer_class = TitleSerializer
     filter_backends = (filters.SearchFilter, DjangoFilterBackend, )
     permission_classes = (IsAdminOrReadOnly,)
-    search_fields = ('name', 'year', 'category__slug', 'genre_slug',)
+    filterset_class = TitleFilter
+    search_fields = ('name', 'year', 'category', 'genre',)
 
-    def perform_create(self, serializer):
-        serializer.save(data=self.request.data)
 
     def get_serializer_class(self):
         if self.request.method in ('POST', 'PATCH'):
             return TitleCreateSerializer
         return TitleSerializer
+
+

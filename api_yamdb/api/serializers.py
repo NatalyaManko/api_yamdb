@@ -147,31 +147,22 @@ class TitleCreateSerializer(serializers.ModelSerializer):
     """Сериализатор Произведений"""
     genre = serializers.SlugRelatedField(slug_field='slug',
                                          many=True,
-                                         read_only=True)
-    category = serializers.SlugRelatedField(read_only=True, slug_field='slug')
+                                         read_only=False,
+                                         queryset=Genre.objects.all())
+    category = serializers.SlugRelatedField(read_only=False,
+                                            required=True,
+                                            slug_field='slug',
+                                            queryset=Category.objects.all())
 
     def validate(self, data):
-        if isinstance(data['year'], int):
-            if data['year'] > datetime.date.today().year:
-                serializers.ValidationError(
-                    'Год не быть больше текущего')
-        else:
-            serializers.ValidationError('Год должен быть числом!!!')
+        if 'year' in data:
+            if isinstance(data['year'], int):
+                if data['year'] > datetime.date.today().year:
+                    serializers.ValidationError(
+                        'Год не быть больше текущего')
+            else:
+                serializers.ValidationError('Год должен быть числом!!!')
         return data
-
-    def save(self, **validated_data):
-        data = validated_data.get('data')
-        genres = data.pop('genre')
-        category_slug = data.pop('category')
-        category, status = Category.objects.get_or_create(slug=category_slug)
-        title = Title.objects.create(**data, category=category)
-
-        for slug_genre in genres:
-            current_genre, status = Genre.objects.get_or_create(slug=slug_genre)
-            TitleGenre.objects.create(genre=current_genre,
-                                      title=title)
-        return title
-
     def get_rating(self, obj):
         score = Review.objects.filter(
             title=obj
@@ -184,5 +175,5 @@ class TitleCreateSerializer(serializers.ModelSerializer):
                   'name',
                   'year',
                   'description',
-                 'genre',
+                  'genre',
                   'category')
