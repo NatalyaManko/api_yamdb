@@ -66,11 +66,20 @@ class APISignup(APIView):
             self.save_confirmation_code(user_data['username'],
                                         confirmation_code)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        if (
-            User.objects.filter(email=user_data['email']).exists()
-            or User.objects.filter(username=user_data['username']).exists()
-        ):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        error_email = ['Такой email уже зарегистрирован']
+        error_username = ['запрос содержит username'
+                          'зарегистрированного пользователя']
+        if (User.objects.filter(email=user_data['email']).exists()):
+            if User.objects.filter(username=user_data['username']).exists():
+                return Response(
+                    ({'email': error_email, 'username':
+                     error_username}), status=status.HTTP_400_BAD_REQUEST
+                )
+            return Response({'email': error_email},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if User.objects.filter(username=user_data['username']).exists():
+            return Response({'username': error_username},
+                            status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
         self.save_confirmation_code(user_data['username'],
                                     confirmation_code)
