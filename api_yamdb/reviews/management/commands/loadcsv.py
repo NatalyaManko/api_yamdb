@@ -11,7 +11,7 @@ from users.models import User
 class Command(BaseCommand):
     help = 'Заполняет базу данных из файлов CSV'
 
-    def handle(self, *args, ** options):    # noqa: C901
+    def handle(self, *args, **options):    # noqa: C901
 
         paths = {
             'genre': 'static/data/genre.csv',
