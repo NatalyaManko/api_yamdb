@@ -1,4 +1,3 @@
-import datetime
 import re
 
 from django.contrib.auth import get_user_model
@@ -33,6 +32,7 @@ class MeSerializer(UsersSerializer):
 
 class SignUpSerializer(serializers.ModelSerializer):
     """Сериализатор для регистрации пользователя"""
+    
     email = serializers.EmailField(max_length=254,
                                    required=True)
     username = serializers.CharField(max_length=150,
@@ -69,6 +69,7 @@ class GetTokenSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     """Сериализатор Отзывов"""
+    
     author = SlugRelatedField(
         read_only=True,
         slug_field='username',
@@ -93,6 +94,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     """Сериализатор комментариев"""
+    
     author = SlugRelatedField(
         read_only=True,
         slug_field='username',
@@ -106,6 +108,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор Категорий"""
+    
     class Meta:
         fields = ('name', 'slug',)
         model = Category
@@ -113,6 +116,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class GenreSerializer(serializers.ModelSerializer):
     """Сериализатор Жанров"""
+    
     class Meta:
         fields = ('name', 'slug',)
         model = Genre
@@ -120,6 +124,7 @@ class GenreSerializer(serializers.ModelSerializer):
 
 class TitleSerializer(serializers.ModelSerializer):
     """Сериализатор Чтение данных произведений"""
+    
     genre = GenreSerializer(many=True,
                             read_only=False)
     category = CategorySerializer(read_only=True)
@@ -144,6 +149,7 @@ class TitleSerializer(serializers.ModelSerializer):
 
 class TitleCreateSerializer(serializers.ModelSerializer):
     """Сериализатор Произведений"""
+    
     genre = serializers.SlugRelatedField(slug_field='slug',
                                          many=True,
                                          read_only=False,
@@ -152,16 +158,6 @@ class TitleCreateSerializer(serializers.ModelSerializer):
                                             required=True,
                                             slug_field='slug',
                                             queryset=Category.objects.all())
-
-    def validate(self, data):
-        if 'year' in data:
-            if isinstance(data['year'], int):
-                if data['year'] > datetime.date.today().year:
-                    serializers.ValidationError(
-                        'Год не быть больше текущего')
-            else:
-                serializers.ValidationError('Год должен быть числом!!!')
-        return data
 
     class Meta:
         model = Title

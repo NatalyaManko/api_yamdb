@@ -1,6 +1,8 @@
+import datetime
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from rest_framework import serializers
 
 User = get_user_model()
 
@@ -44,6 +46,15 @@ class Title(models.Model):
     genre = models.ManyToManyField(Genre,
                                    verbose_name='Жанры произведений',
                                    through='TitleGenre')
+
+    def validate_year(data, int):
+        if isinstance(data, int):
+            if data > datetime.date.today().year:
+                serializers.ValidationError(
+                    'Год не может быть больше текущего')
+        else:
+            serializers.ValidationError('Год должен быть числом!!!')
+        return data
 
     def __str__(self):
         return self.name

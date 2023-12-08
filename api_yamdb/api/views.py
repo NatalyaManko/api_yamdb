@@ -1,12 +1,11 @@
 import secrets
 import string
 
-import django_filters
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMessage
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, status, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
@@ -15,7 +14,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from reviews.models import Category, Genre, Review, Title
+from reviews.models import Category, Genre, Comment, Review, Title
 
 from .permissions import AdminPermission, IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import (CategorySerializer,
@@ -28,8 +27,22 @@ from .serializers import (CategorySerializer,
                           TitleCreateSerializer,
                           TitleSerializer,
                           UsersSerializer)
+from .filters import TitleFilter
+from .mixins import CustomUpdateViewSet
 
 User = get_user_model()
+
+
+class CreateListDestroyViewSet(mixins.CreateModelMixin,
+                               mixins.ListModelMixin,
+                               mixins.DestroyModelMixin,
+                               viewsets.GenericViewSet):
+    pass
+
+
+class RetrieveViewSet(mixins.RetrieveModelMixin,
+                      viewsets.GenericViewSet):
+    pass
 
 
 class APISignup(APIView):
@@ -102,11 +115,11 @@ class APIGetToken(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class UsersViewSet(ModelViewSet):
+class UsersViewSet(CreateListDestroyViewSet):
     """Создание, получение, изменение объектов User администратором.
        Получение и изменение пользователем своего объекта User"""
+
     queryset = User.objects.all()
-    http_method_names = ('get', 'post', 'patch', 'delete',)
     serializer_class = UsersSerializer
     permission_classes = (IsAuthenticated, AdminPermission,)
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
@@ -131,9 +144,12 @@ class UsersViewSet(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class ReviewViewSet(viewsets.ModelViewSet):
+class ReviewViewSet(CustomUpdateViewSet,
+                    CreateListDestroyViewSet,
+                    RetrieveViewSet):
     """Создание, изменение и удаление отзывов"""
-    http_method_names = ('get', 'post', 'patch', 'delete',)
+
+    queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('text', 'author', 'score')
@@ -141,17 +157,20 @@ class ReviewViewSet(viewsets.ModelViewSet):
                           IsOwnerOrReadOnly,)
 
     def get_queryset(self):
-        title_id = get_object_or_404(Title, id=self.kwargs.get('title_id'))
-        return title_id.reviews_title.filter(title=title_id)
+        title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
+        return title.reviews_title.all()
 
     def perform_create(self, serializer):
-        title_id = get_object_or_404(Title, id=self.kwargs.get('title_id'))
-        serializer.save(author=self.request.user, title=title_id)
+        title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
+        serializer.save(author=self.request.user, title=title)
 
 
-class CommentViewSet(viewsets.ModelViewSet):
+class CommentViewSet(CustomUpdateViewSet,
+                     CreateListDestroyViewSet,
+                     RetrieveViewSet):
     """Создание, изменение и удаление комментариев"""
-    http_method_names = ('get', 'post', 'patch', 'delete',)
+
+    queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('text', 'author',)
@@ -159,18 +178,18 @@ class CommentViewSet(viewsets.ModelViewSet):
                           IsOwnerOrReadOnly,)
 
     def get_queryset(self):
-        review_id = get_object_or_404(Review, id=self.kwargs['review_id'])
-        return review_id.comments.all()
+        review = get_object_or_404(Review, id=self.kwargs['review_id'])
+        return review.comments.all()
 
     def perform_create(self, serializer):
-        review_id = get_object_or_404(Review, id=self.kwargs.get('review_id'))
-        serializer.save(author=self.request.user, review=review_id)
+        review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
+        serializer.save(author=self.request.user, review=review)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(CreateListDestroyViewSet):
     """Создание, изменение и удаление категорий"""
+
     queryset = Category.objects.all()
-    http_method_names = ('get', 'post', 'delete',)
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
     permission_classes = (IsAdminOrReadOnly,)
@@ -181,10 +200,10 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class GenresViewSet(viewsets.ModelViewSet):
+class GenresViewSet(CreateListDestroyViewSet):
     """Создание, изменение и удаление жанров"""
+
     queryset = Genre.objects.all()
-    http_method_names = ('get', 'post', 'delete',)
     serializer_class = GenreSerializer
     filter_backends = (filters.SearchFilter,)
     permission_classes = (IsAdminOrReadOnly,)
@@ -195,20 +214,12 @@ class GenresViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class TitleFilter(django_filters.FilterSet):
-    genre = django_filters.CharFilter(field_name='genre__slug',
-                                      lookup_expr='iexact')
-    category = django_filters.CharFilter(field_name='category__slug',
-                                         lookup_expr='iexact')
+class TitlesViewSet(CustomUpdateViewSet,
+                    CreateListDestroyViewSet,
+                    RetrieveViewSet):
+    """Создание, изменение и удаление произведений"""
 
-    class Meta:
-        model = Title
-        fields = ['genre', 'category', 'name', 'year']
-
-
-class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
-    http_method_names = ('get', 'post', 'patch', 'delete',)
     filter_backends = (filters.SearchFilter, DjangoFilterBackend, )
     permission_classes = (IsAdminOrReadOnly,)
     filterset_class = TitleFilter
