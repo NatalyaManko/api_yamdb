@@ -74,12 +74,6 @@ class APISignup(APIView):
             self.save_confirmation_code(username,
                                         confirmation_code)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        # if (
-        #     User.objects.filter(Q(email__iexact=email)
-        #                         | Q(username__iexact=username)
-        #                         ).exists()
-        # ):
-        #     return Response(status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
         confirmation_code = self.generate_confirmation_code(username)
         self.send_email(username=username,

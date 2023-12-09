@@ -1,13 +1,10 @@
 import datetime
-import re
 
 from django.contrib.auth import get_user_model
 from django.db.models import Avg, Q
 from django.shortcuts import get_object_or_404
-from rest_framework import serializers
+from rest_framework import serializers, validators
 from rest_framework.relations import SlugRelatedField
-from rest_framework import filters, status
-from rest_framework.response import Response
 
 from reviews.models import Category, Comment, Genre, Review, Title
 
@@ -35,24 +32,20 @@ class MeSerializer(UsersSerializer):
 
 class SignUpSerializer(serializers.ModelSerializer):
     """Сериализатор для регистрации пользователя"""
-    email = serializers.EmailField(max_length=254,
-                                   required=True)
-    username = serializers.CharField(max_length=150,
-                                     required=True)
 
-    # def validate(self, data):
-    #     username = data["username"]
-    #     email = data["email"]
-    #     if User.objects.filter(username__iexact=username,
-    #                            email__iexact=email).exists():
-    #         return data
-    #     if (
-    #         User.objects.filter(Q(email__iexact=email)
-    #                             | Q(username__iexact=username)
-    #                             ).exists()
-    #     ):
-    #         raise serializers.ValidationError()
-    #     return data
+    def __init__(self, instance=None, data=..., **kwargs):
+        super().__init__(instance, data, **kwargs)
+
+        def new_validators(field):
+            new_validators = filter(
+                lambda validator: not isinstance(validator,
+                                                 validators.UniqueValidator),
+                self.fields[field].validators
+            )
+            self.fields[field].validators = new_validators
+
+        new_validators(field="email")
+        new_validators(field="username")
 
     class Meta:
         model = User
@@ -61,38 +54,9 @@ class SignUpSerializer(serializers.ModelSerializer):
             'username'
         )
 
-    # def validate(self, data):
-    #     username = data["username"]
-    #     email = data["email"]
-    #     if User.objects.filter(username__iexact=username,
-    #                            email__iexact=email).exists():
-    #         return data
-    #     if (
-    #         User.objects.filter(Q(email__iexact=email)
-    #                             | Q(username__iexact=username)
-    #                             ).exists()
-    #     ):
-    #         raise serializers.ValidationError()
-    #     return data
-
-    
-
-    # def create(self, validated_data):
-    #     try:
-    #         obj = User.objects.create(**validated_data)
-    #         return obj
-    #     except:
-    #         return Response(serializers.errors, status=status.HTTP_202_ACCEPTED)
-
     def validate(self, data):
         username = data["username"]
         email = data["email"]
-        if data['username'].lower() == 'me':
-            raise serializers.ValidationError({'username': 'me - недопустимое'
-                                               'имя пользователя'})
-        if re.search(r'^[\w.@+-]+\Z', data['username']) is None:
-            raise serializers.ValidationError({'username':
-                                               'Недопустимые символы'})
         if User.objects.filter(username__iexact=username,
                                email__iexact=email).exists():
             return data
@@ -107,8 +71,14 @@ class SignUpSerializer(serializers.ModelSerializer):
 
 class GetTokenSerializer(serializers.ModelSerializer):
     """Сериализатор для регистрации пользователя"""
-    # username = serializers.CharField(required=True)
-    # confirmation_code = serializers.CharField(required=True)
+    def __init__(self, instance=None, data=..., **kwargs):
+        super().__init__(instance, data, **kwargs)
+        new_validators = filter(
+            lambda validator: not isinstance(validator,
+                                             validators.UniqueValidator),
+            self.fields["username"].validators
+        )
+        self.fields["username"].validators = new_validators
 
     class Meta:
         model = User
