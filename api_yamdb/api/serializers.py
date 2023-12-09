@@ -2,10 +2,12 @@ import datetime
 import re
 
 from django.contrib.auth import get_user_model
-from django.db.models import Avg
+from django.db.models import Avg, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
+from rest_framework import filters, status
+from rest_framework.response import Response
 
 from reviews.models import Category, Comment, Genre, Review, Title
 
@@ -38,6 +40,20 @@ class SignUpSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=150,
                                      required=True)
 
+    # def validate(self, data):
+    #     username = data["username"]
+    #     email = data["email"]
+    #     if User.objects.filter(username__iexact=username,
+    #                            email__iexact=email).exists():
+    #         return data
+    #     if (
+    #         User.objects.filter(Q(email__iexact=email)
+    #                             | Q(username__iexact=username)
+    #                             ).exists()
+    #     ):
+    #         raise serializers.ValidationError()
+    #     return data
+
     class Meta:
         model = User
         fields = (
@@ -45,19 +61,54 @@ class SignUpSerializer(serializers.ModelSerializer):
             'username'
         )
 
+    # def validate(self, data):
+    #     username = data["username"]
+    #     email = data["email"]
+    #     if User.objects.filter(username__iexact=username,
+    #                            email__iexact=email).exists():
+    #         return data
+    #     if (
+    #         User.objects.filter(Q(email__iexact=email)
+    #                             | Q(username__iexact=username)
+    #                             ).exists()
+    #     ):
+    #         raise serializers.ValidationError()
+    #     return data
+
+    
+
+    # def create(self, validated_data):
+    #     try:
+    #         obj = User.objects.create(**validated_data)
+    #         return obj
+    #     except:
+    #         return Response(serializers.errors, status=status.HTTP_202_ACCEPTED)
+
     def validate(self, data):
-        if data['username'] == 'me':
-            raise serializers.ValidationError('me - недопустимое'
-                                              'имя пользователя')
+        username = data["username"]
+        email = data["email"]
+        if data['username'].lower() == 'me':
+            raise serializers.ValidationError({'username': 'me - недопустимое'
+                                               'имя пользователя'})
         if re.search(r'^[\w.@+-]+\Z', data['username']) is None:
-            raise serializers.ValidationError('Недопустимые символы')
+            raise serializers.ValidationError({'username':
+                                               'Недопустимые символы'})
+        if User.objects.filter(username__iexact=username,
+                               email__iexact=email).exists():
+            return data
+        if (
+            User.objects.filter(Q(email__iexact=email)
+                                | Q(username__iexact=username)
+                                ).exists()
+        ):
+            raise serializers.ValidationError()
         return data
 
 
 class GetTokenSerializer(serializers.ModelSerializer):
     """Сериализатор для регистрации пользователя"""
-    username = serializers.CharField(required=True)
-    confirmation_code = serializers.CharField(required=True)
+    # username = serializers.CharField(required=True)
+    # confirmation_code = serializers.CharField(required=True)
 
     class Meta:
         model = User

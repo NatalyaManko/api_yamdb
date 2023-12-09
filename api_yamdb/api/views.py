@@ -1,8 +1,6 @@
-import secrets
-import string
-
 import django_filters
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -35,7 +33,16 @@ User = get_user_model()
 class APISignup(APIView):
     """Регистрация и получение кода подтверждения по почте"""
 
-    def send_email(self, email_data):
+    def send_email(self, username, email, confirmation_code):
+        email_body = (
+            f'Здравствуйте, {username}.'
+            f'\nВаш код доступа: {confirmation_code}'
+        )
+        email_data = {
+            'email_body': email_body,
+            'to_email': email,
+            'email_subject': 'Код доступа'
+        }
         email = EmailMessage(
             subject=email_data['email_subject'],
             body=email_data['email_body'],
@@ -43,10 +50,9 @@ class APISignup(APIView):
         )
         email.send()
 
-    def generate_confirmation_code(self):
-        letters_and_digits = string.ascii_letters + string.digits
-        confirmation_code = ''.join(secrets.choice(
-            letters_and_digits) for i in range(8))
+    def generate_confirmation_code(self, username):
+        user = User.objects.get(username=username)
+        confirmation_code = default_token_generator.make_token(user)
         return confirmation_code
 
     def save_confirmation_code(self, username, code):
@@ -57,29 +63,29 @@ class APISignup(APIView):
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user_data = serializer.validated_data
-        confirmation_code = self.generate_confirmation_code()
-        email_body = (
-            f'Здравствуйте, {user_data["username"]}.'
-            f'\nВаш код доступа: {confirmation_code}'
-        )
-        email_data = {
-            'email_body': email_body,
-            'to_email': user_data['email'],
-            'email_subject': 'Код доступа'
-        }
-        self.send_email(email_data)
-        if User.objects.filter(username=user_data['username'],
-                               email=user_data['email']).exists():
-            self.save_confirmation_code(user_data['username'],
+        username = user_data['username']
+        email = user_data['email']
+        if User.objects.filter(username__iexact=username,
+                               email__iexact=email).exists():
+            confirmation_code = self.generate_confirmation_code(username)
+            self.send_email(username=username,
+                            email=email,
+                            confirmation_code=confirmation_code)
+            self.save_confirmation_code(username,
                                         confirmation_code)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        if (
-            User.objects.filter(email=user_data['email']).exists()
-            or User.objects.filter(username=user_data['username']).exists()
-        ):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        # if (
+        #     User.objects.filter(Q(email__iexact=email)
+        #                         | Q(username__iexact=username)
+        #                         ).exists()
+        # ):
+        #     return Response(status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
-        self.save_confirmation_code(user_data['username'],
+        confirmation_code = self.generate_confirmation_code(username)
+        self.send_email(username=username,
+                        email=email,
+                        confirmation_code=confirmation_code)
+        self.save_confirmation_code(username,
                                     confirmation_code)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
