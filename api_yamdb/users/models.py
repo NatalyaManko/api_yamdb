@@ -26,9 +26,7 @@ class User(AbstractUser):
     email = models.EmailField(
         _('email address'),
         max_length=254,
-        unique=True,
-        blank=False,
-        null=False
+        unique=True
     )
     bio = models.TextField(
         _('Биография'),
@@ -42,7 +40,7 @@ class User(AbstractUser):
     )
     confirmation_code = models.CharField(
         _('код подтверждения'),
-        max_length=8,
+        max_length=255,
         null=True
     )
     first_name = models.CharField(
@@ -55,7 +53,6 @@ class User(AbstractUser):
         max_length=150,
         blank=True
     )
-#    REQUIRED_FIELDS = []
 
     @property
     def is_user(self):

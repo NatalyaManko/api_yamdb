@@ -1,6 +1,6 @@
 from rest_framework import mixins
-from rest_framework.viewsets import GenericViewSet
 from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.viewsets import GenericViewSet
 
 
 class CreateListDestroyMixin(mixins.CreateModelMixin,
