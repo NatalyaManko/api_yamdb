@@ -1,18 +1,20 @@
 import secrets
 import string
 
+from django.db.models import Avg
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status, viewsets, mixins
+from rest_framework import filters, status
 from rest_framework.decorators import action
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
+
 
 from reviews.models import Category, Genre, Comment, Review, Title
 
@@ -28,21 +30,10 @@ from .serializers import (CategorySerializer,
                           TitleSerializer,
                           UsersSerializer)
 from .filters import TitleFilter
-from .mixins import CustomUpdateViewSet
+from .mixins import CustomUpdateMixin, RetrieveMixin, CreateListDestroyMixin
+
 
 User = get_user_model()
-
-
-class CreateListDestroyViewSet(mixins.CreateModelMixin,
-                               mixins.ListModelMixin,
-                               mixins.DestroyModelMixin,
-                               viewsets.GenericViewSet):
-    pass
-
-
-class RetrieveViewSet(mixins.RetrieveModelMixin,
-                      viewsets.GenericViewSet):
-    pass
 
 
 class APISignup(APIView):
@@ -115,7 +106,27 @@ class APIGetToken(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class UsersViewSet(CreateListDestroyViewSet):
+class APIGetToken(APIView):
+    """Получение токена"""
+
+    def post(self, request):
+        serializer = GetTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            user = User.objects.get(username=data['username'])
+        except User.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        if data.get('confirmation_code') == user.confirmation_code:
+            token = RefreshToken.for_user(user).access_token
+            return Response({'token': str(token)},
+                            status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class UsersViewSet(CustomUpdateMixin,
+                   CreateListDestroyMixin,
+                   RetrieveMixin):
     """Создание, получение, изменение объектов User администратором.
        Получение и изменение пользователем своего объекта User"""
 
@@ -144,9 +155,9 @@ class UsersViewSet(CreateListDestroyViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class ReviewViewSet(CustomUpdateViewSet,
-                    CreateListDestroyViewSet,
-                    RetrieveViewSet):
+class ReviewViewSet(CustomUpdateMixin,
+                    CreateListDestroyMixin,
+                    RetrieveMixin):
     """Создание, изменение и удаление отзывов"""
 
     queryset = Review.objects.all()
@@ -165,9 +176,9 @@ class ReviewViewSet(CustomUpdateViewSet,
         serializer.save(author=self.request.user, title=title)
 
 
-class CommentViewSet(CustomUpdateViewSet,
-                     CreateListDestroyViewSet,
-                     RetrieveViewSet):
+class CommentViewSet(CustomUpdateMixin,
+                     CreateListDestroyMixin,
+                     RetrieveMixin):
     """Создание, изменение и удаление комментариев"""
 
     queryset = Comment.objects.all()
@@ -186,7 +197,7 @@ class CommentViewSet(CustomUpdateViewSet,
         serializer.save(author=self.request.user, review=review)
 
 
-class CategoryViewSet(CreateListDestroyViewSet):
+class CategoryViewSet(CreateListDestroyMixin):
     """Создание, изменение и удаление категорий"""
 
     queryset = Category.objects.all()
@@ -200,7 +211,7 @@ class CategoryViewSet(CreateListDestroyViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class GenresViewSet(CreateListDestroyViewSet):
+class GenresViewSet(CreateListDestroyMixin):
     """Создание, изменение и удаление жанров"""
 
     queryset = Genre.objects.all()
@@ -214,9 +225,9 @@ class GenresViewSet(CreateListDestroyViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class TitlesViewSet(CustomUpdateViewSet,
-                    CreateListDestroyViewSet,
-                    RetrieveViewSet):
+class TitlesViewSet(CustomUpdateMixin,
+                    CreateListDestroyMixin,
+                    RetrieveMixin):
     """Создание, изменение и удаление произведений"""
 
     queryset = Title.objects.all()
@@ -229,3 +240,10 @@ class TitlesViewSet(CustomUpdateViewSet,
         if self.request.method in ('POST', 'PATCH'):
             return TitleCreateSerializer
         return TitleSerializer
+
+    def get_queryset(self):
+        if self.request.method in 'GET':
+            return Title.objects.prefetch_related(
+                'reviews_title__title'
+            ).annotate(rating=Avg('reviews_title__score'))
+        return Title.objects.all()

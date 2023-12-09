@@ -3,7 +3,20 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework.exceptions import MethodNotAllowed
 
 
-class CustomUpdateViewSet(mixins.UpdateModelMixin, GenericViewSet):
+class CreateListDestroyMixin(mixins.CreateModelMixin,
+                             mixins.ListModelMixin,
+                             mixins.DestroyModelMixin,
+                             GenericViewSet):
+    pass
+
+
+class RetrieveMixin(mixins.RetrieveModelMixin,
+                    GenericViewSet):
+    pass
+
+
+class CustomUpdateMixin(mixins.UpdateModelMixin,
+                        GenericViewSet):
 
     def update(self, request, *args, **kwargs):
         if request.method == 'PUT':

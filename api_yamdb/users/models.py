@@ -17,15 +17,12 @@ class User(AbstractUser):
         validators=(AbstractUser.username_validator, validate_username,),
         max_length=150,
         unique=True,
-        blank=False,
-        null=False,
         help_text=_('Required. 150 characters or fewer.'
                     'Letters, digits and @/./+/-/_ only.'),
         error_messages={
             'unique': _("A user with that username already exists."),
         },
     )
-
     email = models.EmailField(
         _('email address'),
         max_length=254,
@@ -33,23 +30,19 @@ class User(AbstractUser):
         blank=False,
         null=False
     )
-
     bio = models.TextField(
         _('Биография'),
         blank=True
     )
-
     role = models.CharField(
         _('Роль пользователя'),
         max_length=30,
         choices=ROLES,
         default='user'
     )
-
     confirmation_code = models.CharField(
         _('код подтверждения'),
         max_length=8,
-        blank=False,
         null=True
     )
     first_name = models.CharField(
@@ -62,8 +55,7 @@ class User(AbstractUser):
         max_length=150,
         blank=True
     )
-
-    REQUIRED_FIELDS = []
+#    REQUIRED_FIELDS = []
 
     @property
     def is_user(self):
