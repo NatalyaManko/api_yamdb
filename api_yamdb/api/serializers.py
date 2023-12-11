@@ -1,10 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from rest_framework import serializers, validators
+from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 
 from reviews.models import Category, Comment, Genre, Review, Title
+from users.validators import validation_username
 
 User = get_user_model()
 
@@ -28,33 +29,24 @@ class MeSerializer(UsersSerializer):
     role = serializers.CharField(read_only=True)
 
 
-class SignUpSerializer(serializers.ModelSerializer):
+class SignUpSerializer(serializers.Serializer):
     """Сериализатор для регистрации пользователя"""
+    username = serializers.CharField(
+        max_length=150,
+    )
 
-    def __init__(self, instance=None, data=..., **kwargs):
-        super().__init__(instance, data, **kwargs)
+    email = serializers.EmailField(
+        max_length=254,
+    )
 
-        def new_validators(field):
-            new_validators = filter(
-                lambda validator: not isinstance(validator,
-                                                 validators.UniqueValidator),
-                self.fields[field].validators
-            )
-            self.fields[field].validators = new_validators
-
-        new_validators(field="email")
-        new_validators(field="username")
-
-    class Meta:
-        model = User
-        fields = (
-            'email',
-            'username'
-        )
+    def validate_username(self, value):
+        validation_username(value)
+        return value
 
     def validate(self, data):
         username = data["username"]
         email = data["email"]
+
         if User.objects.filter(username__iexact=username,
                                email__iexact=email).exists():
             return data
@@ -63,28 +55,22 @@ class SignUpSerializer(serializers.ModelSerializer):
                                 | Q(username__iexact=username)
                                 ).exists()
         ):
-            raise serializers.ValidationError()
+            raise serializers.ValidationError('Такой email или '
+                                              'username уже зарегистрирован')
         return data
 
+    def create(self, validated_data):
+        return User.objects.create(**validated_data)
 
-class GetTokenSerializer(serializers.ModelSerializer):
-    """Сериализатор для получения токена"""
 
-    def __init__(self, instance=None, data=..., **kwargs):
-        super().__init__(instance, data, **kwargs)
-        new_validators = filter(
-            lambda validator: not isinstance(validator,
-                                             validators.UniqueValidator),
-            self.fields["username"].validators
-        )
-        self.fields["username"].validators = new_validators
-
-    class Meta:
-        model = User
-        fields = (
-            'confirmation_code',
-            'username'
-        )
+class GetTokenSerializer(serializers.Serializer):
+    """Сериализатор для регистрации пользователя"""
+    username = serializers.CharField(
+        max_length=150,
+    )
+    confirmation_code = serializers.CharField(
+        max_length=255,
+    )
 
 
 class ReviewSerializer(serializers.ModelSerializer):

@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from users.validators import validate_username
+from users.validators import validation_username
 
 ROLES = (
         ('user', 'Пользователь'),
@@ -14,7 +14,7 @@ ROLES = (
 class User(AbstractUser):
     username = models.CharField(
         _('username'),
-        validators=(AbstractUser.username_validator, validate_username,),
+        validators=(AbstractUser.username_validator, validation_username,),
         max_length=150,
         unique=True,
         help_text=_('Required. 150 characters or fewer.'

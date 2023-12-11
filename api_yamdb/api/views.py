@@ -34,31 +34,25 @@ User = get_user_model()
 class APISignup(APIView):
     """Регистрация и получение кода подтверждения по почте"""
 
-    def send_email(self, username, email, confirmation_code):
+    def send_email_save_code(self, username, email):
+
+        user = User.objects.get(username__iexact=username)
+        confirmation_code = default_token_generator.make_token(user)
+
         email_body = (
             f'Здравствуйте, {username}.'
             f'\nВаш код доступа: {confirmation_code}'
         )
-        email_data = {
-            'email_body': email_body,
-            'to_email': email,
-            'email_subject': 'Код доступа'
-        }
+
         email = EmailMessage(
-            subject=email_data['email_subject'],
-            body=email_data['email_body'],
-            to=[email_data['to_email']]
+            subject='Код доступа',
+            body=email_body,
+            to=[email]
         )
         email.send()
 
-    def generate_confirmation_code(self, username):
-        user = User.objects.get(username=username)
-        confirmation_code = default_token_generator.make_token(user)
-        return confirmation_code
-
-    def save_confirmation_code(self, username, code):
-        user = User.objects.filter(username=username)
-        user.update(confirmation_code=code)
+        user = User.objects.filter(username__iexact=username)
+        user.update(confirmation_code=confirmation_code)
 
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
@@ -66,22 +60,13 @@ class APISignup(APIView):
         user_data = serializer.validated_data
         username = user_data['username']
         email = user_data['email']
+
         if User.objects.filter(username__iexact=username,
                                email__iexact=email).exists():
-            confirmation_code = self.generate_confirmation_code(username)
-            self.send_email(username=username,
-                            email=email,
-                            confirmation_code=confirmation_code)
-            self.save_confirmation_code(username,
-                                        confirmation_code)
+            self.send_email_save_code(username, email)
             return Response(serializer.data, status=status.HTTP_200_OK)
         serializer.save()
-        confirmation_code = self.generate_confirmation_code(username)
-        self.send_email(username=username,
-                        email=email,
-                        confirmation_code=confirmation_code)
-        self.save_confirmation_code(username,
-                                    confirmation_code)
+        self.send_email_save_code(username, email)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -99,7 +84,7 @@ class APIGetToken(APIView):
         if data.get('confirmation_code') == user.confirmation_code:
             token = RefreshToken.for_user(user).access_token
             return Response({'token': str(token)},
-                            status=status.HTTP_201_CREATED)
+                            status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
