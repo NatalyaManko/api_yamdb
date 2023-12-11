@@ -8,6 +8,16 @@ from rest_framework import serializers
 User = get_user_model()
 
 
+def validate_year(data):
+    if isinstance(data, int):
+        if data > datetime.date.today().year:
+            serializers.ValidationError(
+                'Год не может быть больше текущего')
+    else:
+        serializers.ValidationError('Год должен быть числом!!!')
+    return data
+
+
 class Category(models.Model):
     """Модель Категорий"""
 
@@ -47,21 +57,13 @@ class Title(models.Model):
                                  related_name='category')
     name = models.CharField(max_length=256,
                             verbose_name='Название произведения')
-    year = models.PositiveSmallIntegerField(verbose_name='Год произведения')
+    year = models.PositiveSmallIntegerField(verbose_name='Год произведения',
+                                            validators=[validate_year,])
     description = models.TextField(blank=True,
                                    verbose_name='Описание произведения')
     genre = models.ManyToManyField(Genre,
                                    verbose_name='Жанры произведений',
                                    through='TitleGenre')
-
-    def validate_year(data, int):
-        if isinstance(data, int):
-            if data > datetime.date.today().year:
-                serializers.ValidationError(
-                    'Год не может быть больше текущего')
-        else:
-            serializers.ValidationError('Год должен быть числом!!!')
-        return data
 
     class Meta:
         verbose_name = 'произведение'

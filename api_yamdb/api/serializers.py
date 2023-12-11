@@ -64,7 +64,7 @@ class SignUpSerializer(serializers.Serializer):
 
 
 class GetTokenSerializer(serializers.Serializer):
-    """Сериализатор для регистрации пользователя"""
+    """Сериализатор для получения токена"""
     username = serializers.CharField(
         max_length=150,
     )
