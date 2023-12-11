@@ -58,7 +58,7 @@ class Title(models.Model):
     name = models.CharField(max_length=256,
                             verbose_name='Название произведения')
     year = models.PositiveSmallIntegerField(verbose_name='Год произведения',
-                                            validators=[validate_year,])
+                                            validators=[validate_year])
     description = models.TextField(blank=True,
                                    verbose_name='Описание произведения')
     genre = models.ManyToManyField(Genre,
