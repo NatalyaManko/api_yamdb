@@ -138,16 +138,15 @@ urllib3==1.26.18
 ```
 **_Контактная информация_**
 Над проектом работали:
-```
+
 Наталья Манько
-https://github.com/NatalyaManko
+https://github.com/NatalyaManko 
 eMail: natalamanko955@gmail.com
-```
+
 Алексей Сухоруков
-https://github.com/AlekseySuhorukov
+https://github.com/AlekseySuhorukov 
 eMail: aleksey.suhorukov2@gmail.com
-```
+
 Ринат Сайфулин
 https://github.com/RinatChel 
 eMail: saifullinrg@yandex.ru
-```
